@@ -1,0 +1,12 @@
+{
+  "name": "tsci",
+  "description": "C interpreter written in TypeScript",
+  "version": "0.0.1",
+  "author": "drincann",
+  "main": "src/index.mjs",
+  "type": "module",
+  "scripts": {
+    "test": "tsc && node --test",
+    "build": "tsc"
+  }
+}
