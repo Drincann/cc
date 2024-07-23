@@ -8,5 +8,9 @@
   "scripts": {
     "test": "tsc && node --test",
     "build": "tsc"
+  },
+  "dependencies": {
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
   }
 }
