@@ -8,7 +8,7 @@
   "scripts": {
     "test": "node --import=tsx --test test/*",
     "build": "tsc --outDir dist",
-    "start": "node --import=tsx dist/index.mjs src/demo/hello.c",
+    "start": "node --import=tsx src/index.mts src/demo/hello.c",
     "dev": "nodemon -w src -w test --ext mts --exec \"npm test\""
   },
   "devDependencies": {
