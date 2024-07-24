@@ -1,4 +1,5 @@
 import assert from "assert"
+import { parseDec , parseHex, parseOct, isDigitWithUnderscore, isDigit, isOctDigitWithUnderscore, isOctDigit, isHexDigitWithUnderscore, isHexDigit, isIdentifierStart, isNumberStart, isIdentifier, isEOF } from "./utils.mjs"
 
 interface Identifier<TokenTypeGeneric extends TokenType> {
   name: string
@@ -13,7 +14,7 @@ type Token<TokenTypeGeneric extends TokenType> = {
 
 type TokenValueType<TokenTypeGeneric extends TokenType> =
   TokenTypeGeneric extends TokenType.Identifier ? string :
-  TokenTypeGeneric extends TokenType.Number ? string :
+  TokenTypeGeneric extends TokenType.Number ? number :
   never
 
 export enum TokenType {
@@ -112,7 +113,7 @@ export class ClangTokenizer {
       return /* new Token */ {
         line: this.meta.line,
         type: TokenType.Number,
-        value: '0' + value
+        value: parseDec('0' + value)
       }
     } else if ('0' === this.code[start]) {
       if /* hex */('0x' === this.code.substring(start, start + 2) && isHexDigit(this.code[start + 2])) {
@@ -128,7 +129,7 @@ export class ClangTokenizer {
         return /* new Token */ {
           line: this.meta.line,
           type: TokenType.Number,
-          value
+          value: parseHex(value)
         }
       } else if /* oct */ ('0' === this.code[start] && isOctDigit(this.code[start + 1])) {
         let end = start + 1
@@ -143,7 +144,7 @@ export class ClangTokenizer {
         return /* new Token */ {
           line: this.meta.line,
           type: TokenType.Number,
-          value
+          value: parseOct(value)
         }
       } else if /* float */ ('.' === this.code[start + 1] && isDigit(this.code[start + 2])) {
         let end = start + 2
@@ -158,14 +159,14 @@ export class ClangTokenizer {
         return /* new Token */ {
           line: this.meta.line,
           type: TokenType.Number,
-          value
+          value: parseDec(value)
         }
       }
 
       return /* new Token */ {
         line: this.meta.line,
         type: TokenType.Number,
-        value: '0'
+        value: 0
       }
     } else /* dec */ {
       let end = start + 1
@@ -188,9 +189,8 @@ export class ClangTokenizer {
       return /* new Token */ {
         line: this.meta.line,
         type: TokenType.Number,
-        value
+        value: parseDec(value)
       }
-
     }
   }
 
@@ -221,48 +221,4 @@ export class ClangTokenizer {
     }
   }
 
-}
-function isEOF(char?: string): boolean {
-  return char === '\0' || char === undefined
-}
-
-
-function isIdentifierStart(char: string) {
-  return isAlpha(char) || char === '_'
-}
-
-function isIdentifier(char: string) {
-  return isAlpha(char) || isDigit(char) || char === '_'
-}
-
-function isAlpha(char: string) {
-  return (char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z')
-}
-
-function isDigit(char: string): boolean {
-  return char >= '0' && char <= '9'
-}
-
-function isDigitWithUnderscore(char: string): boolean {
-  return isDigit(char) || char === '_'
-}
-
-function isHexDigit(char: string): boolean {
-  return (char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')
-}
-
-function isHexDigitWithUnderscore(char: string): boolean {
-  return isHexDigit(char) || char === '_'
-}
-
-function isOctDigit(char: string): boolean {
-  return char >= '0' && char <= '7'
-}
-
-function isOctDigitWithUnderscore(char: string): boolean {
-  return isOctDigit(char) || char === '_'
-}
-
-function isNumberStart(char: string): boolean {
-  return isDigit(char) || char === '.'
 }

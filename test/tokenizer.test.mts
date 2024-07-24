@@ -79,7 +79,7 @@ describe("ClangTokenizer", () => {
           const token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "0",
+            value: 0,
             line: 1,
           })
         }
@@ -92,7 +92,7 @@ describe("ClangTokenizer", () => {
           const token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "123",
+            value: 123,
             line: 1,
           })
         }
@@ -105,7 +105,7 @@ describe("ClangTokenizer", () => {
           const token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "1.23",
+            value: 1.23,
             line: 1,
           })
         }
@@ -118,7 +118,7 @@ describe("ClangTokenizer", () => {
           const token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "0.123",
+            value: 0.123,
             line: 1,
           })
         }
@@ -131,7 +131,7 @@ describe("ClangTokenizer", () => {
           const token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "0.123",
+            value: 0.123,
             line: 1,
           })
         }
@@ -144,21 +144,21 @@ describe("ClangTokenizer", () => {
           let token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "123",
+            value: 123,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "1.23",
+            value: 1.23,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "0.123",
+            value: 0.123,
             line: 1,
           })
         }
@@ -171,7 +171,7 @@ describe("ClangTokenizer", () => {
           const token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "0x123abcdef",
+            value: 0x123abcdef,
             line: 1,
           })
         }
@@ -184,7 +184,20 @@ describe("ClangTokenizer", () => {
           const token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "0x123abcdef",
+            value: 0x123abcdef,
+            line: 1,
+          })
+        }
+      )
+
+      it(
+        "00 is an octal number",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode("00")
+          const token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Number,
+            value: 0o0,
             line: 1,
           })
         }
@@ -197,7 +210,7 @@ describe("ClangTokenizer", () => {
           const token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "01234567",
+            value: 0o1234567,
             line: 1,
           })
         }
@@ -210,7 +223,7 @@ describe("ClangTokenizer", () => {
           const token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "01234567",
+            value: 0o1234567,
             line: 1,
           })
         }
@@ -223,14 +236,14 @@ describe("ClangTokenizer", () => {
           let token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "0",
+            value: 0,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "81",
+            value: 81,
             line: 1,
           })
         })
@@ -242,7 +255,7 @@ describe("ClangTokenizer", () => {
           const token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "0",
+            value: 0,
             line: 1,
           })
         }
@@ -255,46 +268,46 @@ describe("ClangTokenizer", () => {
           let token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "123",
+            value: 123,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "0x456",
+            value: 0x456,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "0x7af89",
+            value: 0x7af89,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "0.00001",
+            value: 0.00001,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "07",
+            value: 0o7,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
             type: TokenType.Number,
-            value: "9",
+            value: 9,
             line: 1,
           })
         }
       )
-    })
-  })
-})
+    }) // suite number
+  }) // suite next
+}) // suite ClangTokenizer
