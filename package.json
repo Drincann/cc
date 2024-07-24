@@ -8,9 +8,11 @@
   "scripts": {
     "test": "node --import=tsx --test test/*",
     "build": "tsc --outDir dist",
-    "start": "node --import=tsx dist/index.mjs src/demo/hello.c"
+    "start": "node --import=tsx dist/index.mjs src/demo/hello.c",
+    "dev": "nodemon -w src --ext mts --exec \"npm test\""
   },
   "devDependencies": {
+    "nodemon": "^3.1.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.16.2",
     "typescript": "^5.5.4"
