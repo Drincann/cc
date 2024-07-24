@@ -1,5 +1,9 @@
 # C Interpreter In TypeScript
 
+## dependencies
+
+Node.js v20+
+
 ## build
 
 ```bash
