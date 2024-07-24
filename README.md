@@ -23,8 +23,11 @@ npx ts-node src/index.mts src/demo/hello.c
 
 # { type: 0, value: 'int', line: 1 }
 # { type: 0, value: 'main', line: 1 }
-# { type: 0, value: 'return', line: 2 }
-# { line: 2, type: 1, value: '0' }
+# { type: 0, value: 'char', line: 3 }
+# { type: 0, value: 'str', line: 3 }
+# { type: 2, line: 3, value: 'echo "Hello, World!"\n' }
+# { type: 0, value: 'return', line: 4 }
+# { line: 4, type: 1, value: 0 }
 ```
 
 ## dev
