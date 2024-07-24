@@ -2,7 +2,6 @@ import { describe, it } from "node:test"
 import assert from 'assert/strict'
 import { ClangTokenizer } from '../src/tokenizer.mjs'
 import { TokenType } from "../src/tokenizer.mjs"
-import { link } from "fs"
 
 describe("ClangTokenizer", () => {
   describe("#next()", () => {
