@@ -1,18 +1,23 @@
 import assert from "assert"
 
+interface Identifier<TokenTypeGeneric extends TokenType> {
+  name: string
+  token: Token<TokenTypeGeneric>
+}
+
+type Token<TokenTypeGeneric extends TokenType> = {
+  line: number
+  type: TokenTypeGeneric
+  value: TokenValueType<TokenTypeGeneric>
+}
+
+type TokenValueType<TokenTypeGeneric extends TokenType> =
+  TokenTypeGeneric extends TokenType.Identifier ? string :
+  TokenTypeGeneric extends TokenType.Number ? string :
+  never
+
 export enum TokenType {
   Identifier, Number
-}
-
-interface Identifier {
-  name: string
-  token: Token
-}
-
-interface Token {
-  line: number
-  type: TokenType
-  value: string
 }
 
 export class ClangTokenizer {
@@ -21,7 +26,7 @@ export class ClangTokenizer {
 
   private meta: {
     line: number
-    symbols: { [key: string]: Identifier | undefined }
+    symbols: { [key: string]: Identifier<any> | undefined }
   } =
     {
       line: 1,
@@ -36,7 +41,7 @@ export class ClangTokenizer {
     return new ClangTokenizer(code)
   }
 
-  public next(): Token | undefined {
+  public next(): Token<any> | undefined {
     let current: string | undefined
     while (current = this.code[this.nextPosition]) {
       assert(current.length === 1, "tokenizer: current char should be a single character.")
@@ -72,7 +77,7 @@ export class ClangTokenizer {
     this.until(new Set(['\n', '\0']))
   }
 
-  private parseNextIdentifier(): Token | undefined {
+  private parseNextIdentifier(): Token<typeof TokenType.Identifier> | undefined {
     const start = this.nextPosition - 1
 
     let end = this.nextPosition
@@ -91,7 +96,7 @@ export class ClangTokenizer {
     return this.getSymbol(name)
   }
 
-  private parseNextNumber(): Token | undefined {
+  private parseNextNumber(): Token<typeof TokenType.Number> | undefined {
     const start = this.nextPosition - 1
 
     if /* float */('.' === this.code[start] && isDigit(this.code[start + 1])) {
@@ -189,7 +194,7 @@ export class ClangTokenizer {
     }
   }
 
-  private getSymbol(name: string): Token {
+  private getSymbol(name: string): Token<typeof TokenType.Identifier> {
     return this.meta.symbols[name]!.token
   }
 
