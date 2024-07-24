@@ -1,5 +1,5 @@
 import assert from "assert"
-import { parseDec , parseHex, parseOct, isDigitWithUnderscore, isDigit, isOctDigitWithUnderscore, isOctDigit, isHexDigitWithUnderscore, isHexDigit, isIdentifierStart, isNumberStart, isIdentifier, isEOF } from "./utils.mjs"
+import { parseDec, parseHex, parseOct, isDigitWithUnderscore, isDigit, isOctDigitWithUnderscore, isOctDigit, isHexDigitWithUnderscore, isHexDigit, isIdentifierStart, isNumberStart, isIdentifier, isEOF } from "./utils.mjs"
 
 interface Identifier<TokenTypeGeneric extends TokenType> {
   name: string

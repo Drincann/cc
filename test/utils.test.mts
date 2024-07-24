@@ -7,14 +7,14 @@ describe("utils", () => {
     it(
       "0",
       () => {
-        assert.equal(parseDec("0"), 0) 
+        assert.equal(parseDec("0"), 0)
       }
     )
 
     it(
       "0.1",
       () => {
-        assert.equal(parseDec("0.1"), 0.1) 
+        assert.equal(parseDec("0.1"), 0.1)
       }
     )
 
