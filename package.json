@@ -9,7 +9,7 @@
     "test": "node --import=tsx --test test/*",
     "build": "tsc --outDir dist",
     "start": "node --import=tsx dist/index.mjs src/demo/hello.c",
-    "dev": "nodemon -w src --ext mts --exec \"npm test\""
+    "dev": "nodemon -w src -w test --ext mts --exec \"npm test\""
   },
   "devDependencies": {
     "nodemon": "^3.1.4",
