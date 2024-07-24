@@ -1,7 +1,7 @@
 import assert from "assert"
 
 export enum TokenType {
-  Identifier,
+  Identifier, Number
 }
 
 interface Identifier {
@@ -46,10 +46,6 @@ export class ClangTokenizer {
         break
       }
 
-      if (current === ' ') {
-        continue
-      }
-
       if (current === '\n') {
         this.meta.line++
         continue
@@ -63,6 +59,10 @@ export class ClangTokenizer {
       if (isIdentifierStart(current)) {
         return this.parseNextIdentifier()
       }
+
+      if (isNumberStart(current)) {
+        return this.parseNextNumber()
+      }
     }
 
     return undefined;
@@ -72,7 +72,7 @@ export class ClangTokenizer {
     this.until(new Set(['\n', '\0']))
   }
 
-  private parseNextIdentifier(): Token {
+  private parseNextIdentifier(): Token | undefined {
     const start = this.nextPosition - 1
 
     let end = this.nextPosition
@@ -90,6 +90,105 @@ export class ClangTokenizer {
 
     return this.getSymbol(name)
   }
+
+  private parseNextNumber(): Token | undefined {
+    const start = this.nextPosition - 1
+
+    if /* float */('.' === this.code[start] && isDigit(this.code[start + 1])) {
+      let end = start + 1
+      let current = this.code[end]
+      while (current != undefined && isDigitWithUnderscore(current)) {
+        end++
+        current = this.code[end]
+      }
+      this.nextPosition = end
+
+      const value = this.code.substring(start, end).replace(/_/g, '')
+      return /* new Token */ {
+        line: this.meta.line,
+        type: TokenType.Number,
+        value: '0' + value
+      }
+    } else if ('0' === this.code[start]) {
+      if /* hex */('0x' === this.code.substring(start, start + 2) && isHexDigit(this.code[start + 2])) {
+        let end = start + 2
+        let current = this.code[end]
+        while (current != undefined && isHexDigitWithUnderscore(current)) {
+          end++
+          current = this.code[end]
+        }
+        this.nextPosition = end
+
+        const value = this.code.substring(start, end).replace(/_/g, '')
+        return /* new Token */ {
+          line: this.meta.line,
+          type: TokenType.Number,
+          value
+        }
+      } else if /* oct */ ('0' === this.code[start] && isOctDigit(this.code[start + 1])) {
+        let end = start + 1
+        let current = this.code[end]
+        while (current != undefined && isOctDigitWithUnderscore(current)) {
+          end++
+          current = this.code[end]
+        }
+        this.nextPosition = end
+
+        const value = this.code.substring(start, end).replace(/_/g, '')
+        return /* new Token */ {
+          line: this.meta.line,
+          type: TokenType.Number,
+          value
+        }
+      } else if /* float */ ('.' === this.code[start + 1] && isDigit(this.code[start + 2])) {
+        let end = start + 2
+        let current = this.code[end]
+        while (current != undefined && isDigitWithUnderscore(current)) {
+          end++
+          current = this.code[end]
+        }
+        this.nextPosition = end
+
+        const value = this.code.substring(start, end).replace(/_/g, '')
+        return /* new Token */ {
+          line: this.meta.line,
+          type: TokenType.Number,
+          value
+        }
+      }
+
+      return /* new Token */ {
+        line: this.meta.line,
+        type: TokenType.Number,
+        value: '0'
+      }
+    } else /* dec */ {
+      let end = start + 1
+      let current = this.code[end]
+      while (current != undefined && isDigitWithUnderscore(current)) {
+        end++
+        current = this.code[end]
+      }
+      if (current === '.' && isDigit(this.code[end + 1])) {
+        end++
+        current = this.code[end]
+        while (current != undefined && isDigitWithUnderscore(current)) {
+          end++
+          current = this.code[end]
+        }
+      }
+      this.nextPosition = end
+
+      const value = this.code.substring(start, end).replace(/_/g, '')
+      return /* new Token */ {
+        line: this.meta.line,
+        type: TokenType.Number,
+        value
+      }
+
+    }
+  }
+
   private getSymbol(name: string): Token {
     return this.meta.symbols[name]!.token
   }
@@ -139,3 +238,26 @@ function isDigit(char: string): boolean {
   return char >= '0' && char <= '9'
 }
 
+function isDigitWithUnderscore(char: string): boolean {
+  return isDigit(char) || char === '_'
+}
+
+function isHexDigit(char: string): boolean {
+  return (char >= '0' && char <= '9') || (char >= 'a' && char <= 'f') || (char >= 'A' && char <= 'F')
+}
+
+function isHexDigitWithUnderscore(char: string): boolean {
+  return isHexDigit(char) || char === '_'
+}
+
+function isOctDigit(char: string): boolean {
+  return char >= '0' && char <= '7'
+}
+
+function isOctDigitWithUnderscore(char: string): boolean {
+  return isOctDigit(char) || char === '_'
+}
+
+function isNumberStart(char: string): boolean {
+  return isDigit(char) || char === '.'
+}
