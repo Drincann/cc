@@ -81,6 +81,48 @@ export function isOctDigitWithUnderscore(char: string): boolean {
   return isOctDigit(char) || char === '_'
 }
 
-export function isNumberStart(char: string): boolean {
+export function isNumberLiteralStart(char: string): boolean {
   return isDigit(char) || char === '.'
+}
+
+export function isStringLiteralStart(current: string): boolean {
+  return current === '"' || current === "'"
+}
+
+export function getCurrentLine(code: string, cursor: number): string | undefined {
+  let current = code[cursor]
+  if (current === undefined) {
+    return undefined
+  }
+
+  let end = cursor
+  while (code[end] !== '\n' && code[end] !== '\r' && code[end] !== undefined) {
+    end++
+  }
+  if (end >= code.length) {
+    end = code.length
+  }
+
+
+  let start = cursor
+  while (code[start] !== '\n' && code[start] !== '\r' && code[start] !== undefined) {
+    start--
+  }
+
+  return code.substring(start + 1, end)
+}
+
+
+export function getEscape(char: string): string {
+  if (char === 'n') {
+    return '\n'
+  } else if (char === 't') {
+    return '\t'
+  } else if (char === 'r') {
+    return '\r'
+  } else if (char === '0') {
+    return '\0'
+  }
+
+  return char
 }

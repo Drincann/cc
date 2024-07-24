@@ -1,5 +1,5 @@
 import assert from "assert"
-import { parseDec, parseHex, parseOct, isDigitWithUnderscore, isDigit, isOctDigitWithUnderscore, isOctDigit, isHexDigitWithUnderscore, isHexDigit, isIdentifierStart, isNumberStart, isIdentifier, isEOF } from "./utils.mjs"
+import { parseDec, parseHex, parseOct, isDigitWithUnderscore, isDigit, isOctDigitWithUnderscore, isOctDigit, isHexDigitWithUnderscore, isHexDigit, isIdentifierStart, isNumberLiteralStart, isIdentifier, isEOF, isStringLiteralStart, getEscape, getCurrentLine } from "./utils.mjs"
 
 interface Identifier<TokenTypeGeneric extends TokenType> {
   name: string
@@ -15,10 +15,11 @@ type Token<TokenTypeGeneric extends TokenType> = {
 type TokenValueType<TokenTypeGeneric extends TokenType> =
   TokenTypeGeneric extends TokenType.Identifier ? string :
   TokenTypeGeneric extends TokenType.Number ? number :
+  TokenTypeGeneric extends TokenType.String ? string :
   never
 
 export enum TokenType {
-  Identifier, Number
+  Identifier, Number, String
 }
 
 export class ClangTokenizer {
@@ -45,7 +46,7 @@ export class ClangTokenizer {
   public next(): Token<any> | undefined {
     let current: string | undefined
     while (current = this.code[this.nextPosition]) {
-      assert(current.length === 1, "tokenizer: current char should be a single character.")
+      assert(current.length === 1, "tokenizer.next(): current char should be a single character.")
       this.nextPosition++
 
       if (isEOF(current)) {
@@ -66,12 +67,83 @@ export class ClangTokenizer {
         return this.parseNextIdentifier()
       }
 
-      if (isNumberStart(current)) {
-        return this.parseNextNumber()
+      if (isNumberLiteralStart(current)) {
+        return this.parseNextNumberLiteral()
+      }
+
+      if (isStringLiteralStart(current)) {
+        return this.parseNextStringLiteral()
       }
     }
 
     return undefined;
+  }
+
+  private parseNextStringLiteral(): Token<TokenType.String> | undefined {
+    const start = this.nextPosition - 1
+
+    if ('"' === this.code[start]) {
+      let cursor = start + 1
+      let current = this.code[cursor]
+      let literal = ''
+      while (current !== undefined && current !== '"' && current !== '\n' && current !== '\r') {
+        if (current === '\\' && this.code[cursor + 1] !== undefined) {
+          const escape = getEscape(this.code[++cursor])
+          if (escape === undefined) {
+            throw new Error("TokenizerError: invalid escape character at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
+          }
+
+          literal += escape
+          current = this.code[++cursor]
+          continue
+        }
+
+        literal += current
+        current = this.code[++cursor]
+      }
+      if (current !== '"') {
+        throw new Error("TokenizerError: unterminated string literal at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
+      }
+
+      this.nextPosition = cursor + 1
+      return /* new Token */{
+        type: TokenType.String,
+        line: this.meta.line,
+        value: literal
+      }
+    } else if ("'" === this.code[start]) {
+      let literalStart = start + 1
+      if (this.code[literalStart] === '\\') {
+        if (this.code[literalStart + 2] !== "'") {
+          throw new Error("TokenizerError: unterminated string literal at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
+        }
+
+        const escape = getEscape(this.code[literalStart + 1])
+        if (escape === undefined) {
+          throw new Error("TokenizerError: invalid escape character at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
+        }
+
+        this.nextPosition = literalStart + 3
+        return /* new Token */ {
+          type: TokenType.String,
+          line: this.meta.line,
+          value: escape
+        }
+      } else {
+        if (this.code[literalStart + 1] !== "'") {
+          throw new Error("TokenizerError: unterminated string literal at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
+        }
+
+        this.next
+        return /* new Token */ {
+          type: TokenType.String,
+          line: this.meta.line,
+          value: this.code[literalStart]
+        }
+      }
+    }
+
+    assert(false, "tokenizer.parseNextStringLiteral(): unreachable code, should be handled by isStringLiteralStart in next()")
   }
 
   private skipMacro() {
@@ -97,7 +169,7 @@ export class ClangTokenizer {
     return this.getSymbol(name)
   }
 
-  private parseNextNumber(): Token<typeof TokenType.Number> | undefined {
+  private parseNextNumberLiteral(): Token<typeof TokenType.Number> | undefined {
     const start = this.nextPosition - 1
 
     if /* float */('.' === this.code[start] && isDigit(this.code[start + 1])) {
@@ -220,5 +292,4 @@ export class ClangTokenizer {
       current = this.code[this.nextPosition]
     }
   }
-
 }

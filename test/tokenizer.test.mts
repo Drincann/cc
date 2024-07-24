@@ -309,5 +309,139 @@ describe("ClangTokenizer", () => {
         }
       )
     }) // suite number
+
+    describe("string", () => {
+      it(
+        "tokenize a double quote string",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode('"abc"')
+          const token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.String,
+            value: "abc",
+            line: 1,
+          })
+        }
+      )
+
+      it(
+        "escape double quote",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode('"c\\"d"')
+          const token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.String,
+            value: 'c"d',
+            line: 1,
+          })
+        })
+
+      it(
+        "handle escape at the start of string",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode('"\\"def"')
+          const token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.String,
+            value: '"def',
+            line: 1,
+          })
+        }
+      )
+
+      it(
+        "handle escape at the end of string",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode('"abc\\""')
+          const token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.String,
+            value: 'abc"',
+            line: 1,
+          })
+        }
+      )
+
+      it(
+        "handle whitespace in string",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode('"a b c"')
+          const token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.String,
+            value: 'a b c',
+            line: 1,
+          })
+        }
+      )
+
+      it(
+        "handle \\r \\0 \\t \\n escape in double quote string",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode('"\\r\\0\\t\\n"')
+          const token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.String,
+            value: '\r\0\t\n',
+            line: 1,
+          })
+        }
+      )
+
+      it(
+        "handle \\r \\0 \\t \\n escape in single quote string",
+        () => {
+          let tokenizer = ClangTokenizer.fromCode("'\0'")
+          let token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.String,
+            value: '\0',
+            line: 1,
+          })
+
+          tokenizer = ClangTokenizer.fromCode("'\r'")
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.String,
+            value: '\r',
+            line: 1,
+          })
+
+          tokenizer = ClangTokenizer.fromCode("'\t'")
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.String,
+            value: '\t',
+            line: 1,
+          })
+
+          tokenizer = ClangTokenizer.fromCode("'\n'")
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.String,
+            value: '\n',
+            line: 1,
+          })
+        }
+      )
+
+      it(
+        "assert throw on unterminated double quote string",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode('"abc')
+          // tokenizer.next()
+          assert.throws(() => tokenizer.next(), new Error("TokenizerError: unterminated string literal at line 1. near: \"abc"))
+        }
+      )
+
+      it(
+        "assert throw on unterminated single quote string",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode("'abc")
+          assert.throws(() => tokenizer.next(), new Error("TokenizerError: unterminated string literal at line 1. near: 'abc"))
+        }
+      )
+
+    }) // suite string
   }) // suite next
 }) // suite ClangTokenizer
