@@ -84,20 +84,6 @@ export class ClangTokenizer {
 
     return undefined;
   }
-  private parseNextComment(): Token<TokenType.Comment> | undefined {
-    const start = this.nextPosition - 1
-    this.until(new Set(['\n', '\0']))
-
-    return {
-      type: TokenType.Comment,
-      line: this.meta.line,
-      value: this.code.substring(start + 2, this.nextPosition)
-    }
-  }
-
-  private isCommentStart(char: string): boolean {
-    return char === '/' && this.code[this.nextPosition] === '/'
-  }
 
   private skipMacro() {
     this.until(new Set(['\n', '\0']))
@@ -228,6 +214,21 @@ export class ClangTokenizer {
     }
 
     assert(false, "tokenizer.parseNextStringLiteral(): unreachable code, should be handled by isStringLiteralStart in next()")
+  }
+
+  private isCommentStart(char: string): boolean {
+    return char === '/' && this.code[this.nextPosition] === '/'
+  }
+
+  private parseNextComment(): Token<TokenType.Comment> | undefined {
+    const start = this.nextPosition - 1
+    this.until(new Set(['\n', '\0']))
+
+    return {
+      type: TokenType.Comment,
+      line: this.meta.line,
+      value: this.code.substring(start + 2, this.nextPosition)
+    }
   }
 
   /**
