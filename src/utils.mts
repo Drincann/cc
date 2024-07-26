@@ -45,6 +45,10 @@ export function isEOF(char?: string): boolean {
   return char === '\0' || char === undefined
 }
 
+export function isNotEOF(char?: string): boolean {
+  return !isEOF(char)
+}
+
 export function isIdentifierStart(char: string) {
   return isAlpha(char) || char === '_'
 }
@@ -112,7 +116,6 @@ export function getCurrentLine(code: string, cursor: number): string | undefined
   return code.substring(start + 1, end)
 }
 
-
 export function getEscape(char: string): string {
   if (char === 'n') {
     return '\n'
@@ -125,4 +128,16 @@ export function getEscape(char: string): string {
   }
 
   return char
+}
+
+export function isDoubleQuote(char: string): char is '"' {
+  return char === '"'
+}
+
+export function isSingleQuote(char: string): char is "'" {
+  return char === "'"
+}
+
+export function isNotEOL(char: string): boolean {
+  return !isEOF(char) && char !== '\n' && char !== '\r'
 }

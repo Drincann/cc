@@ -64,6 +64,37 @@ describe("ClangTokenizer", () => {
       )
 
       it(
+        "tokenize multiple identifiers with \\n",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode("abc_123	\n__1\n  _z3z")
+          let token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Identifier,
+            value: "abc_123",
+            line: 1,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Identifier,
+            value: "__1",
+            line: 2,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Identifier,
+            value: "_z3z",
+            line: 3,
+          })
+
+          token = tokenizer.next()
+          assert.equal(token, undefined)
+
+        }
+      )
+
+      it(
         "should not tokenize a keyword", () => {
           // pass
         }
@@ -305,6 +336,54 @@ describe("ClangTokenizer", () => {
             type: TokenType.Number,
             value: 9,
             line: 1,
+          })
+        }
+      )
+
+      it(
+        "tokenize multiple numbers with \\n",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode(" 123   \n0x456 0x7af89\n 0.00001 079")
+          let token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Number,
+            value: 123,
+            line: 1,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Number,
+            value: 0x456,
+            line: 2,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Number,
+            value: 0x7af89,
+            line: 2,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Number,
+            value: 0.00001,
+            line: 3,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Number,
+            value: 0o7,
+            line: 3,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Number,
+            value: 9,
+            line: 3,
           })
         }
       )

@@ -1,5 +1,5 @@
 import assert from "assert"
-import { parseDec, parseHex, parseOct, isDigitWithUnderscore, isDigit, isOctDigitWithUnderscore, isOctDigit, isHexDigitWithUnderscore, isHexDigit, isIdentifierStart, isNumberLiteralStart, isIdentifier, isEOF, isStringLiteralStart, getEscape, getCurrentLine } from "./utils.mjs"
+import { parseDec, parseHex, parseOct, isDigitWithUnderscore, isDigit, isOctDigitWithUnderscore, isOctDigit, isHexDigitWithUnderscore, isHexDigit, isIdentifierStart, isNumberLiteralStart, isIdentifier, isEOF, isStringLiteralStart, getEscape, getCurrentLine, isDoubleQuote, isSingleQuote, isNotEOL } from "./utils.mjs"
 
 interface Identifier<TokenTypeGeneric extends TokenType> {
   name: string
@@ -79,73 +79,6 @@ export class ClangTokenizer {
     return undefined;
   }
 
-  private parseNextStringLiteral(): Token<TokenType.String> | undefined {
-    const start = this.nextPosition - 1
-
-    if ('"' === this.code[start]) {
-      let cursor = start + 1
-      let current = this.code[cursor]
-      let literal = ''
-      while (current !== undefined && current !== '"' && current !== '\n' && current !== '\r') {
-        if (current === '\\' && this.code[cursor + 1] !== undefined) {
-          const escape = getEscape(this.code[++cursor])
-          if (escape === undefined) {
-            throw new Error("TokenizerError: invalid escape character at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
-          }
-
-          literal += escape
-          current = this.code[++cursor]
-          continue
-        }
-
-        literal += current
-        current = this.code[++cursor]
-      }
-      if (current !== '"') {
-        throw new Error("TokenizerError: unterminated string literal at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
-      }
-
-      this.nextPosition = cursor + 1
-      return /* new Token */{
-        type: TokenType.String,
-        line: this.meta.line,
-        value: literal
-      }
-    } else if ("'" === this.code[start]) {
-      let literalStart = start + 1
-      if (this.code[literalStart] === '\\') {
-        if (this.code[literalStart + 2] !== "'") {
-          throw new Error("TokenizerError: unterminated string literal at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
-        }
-
-        const escape = getEscape(this.code[literalStart + 1])
-        if (escape === undefined) {
-          throw new Error("TokenizerError: invalid escape character at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
-        }
-
-        this.nextPosition = literalStart + 3
-        return /* new Token */ {
-          type: TokenType.String,
-          line: this.meta.line,
-          value: escape
-        }
-      } else {
-        if (this.code[literalStart + 1] !== "'") {
-          throw new Error("TokenizerError: unterminated string literal at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
-        }
-
-        this.next
-        return /* new Token */ {
-          type: TokenType.String,
-          line: this.meta.line,
-          value: this.code[literalStart]
-        }
-      }
-    }
-
-    assert(false, "tokenizer.parseNextStringLiteral(): unreachable code, should be handled by isStringLiteralStart in next()")
-  }
-
   private skipMacro() {
     this.until(new Set(['\n', '\0']))
   }
@@ -155,7 +88,7 @@ export class ClangTokenizer {
 
     let end = this.nextPosition
     let current = this.code[end]
-    while (current != undefined && isIdentifier(current)) {
+    while (isIdentifier(current)) {
       end++
       current = this.code[end]
     }
@@ -175,7 +108,7 @@ export class ClangTokenizer {
     if /* float */('.' === this.code[start] && isDigit(this.code[start + 1])) {
       let end = start + 1
       let current = this.code[end]
-      while (current != undefined && isDigitWithUnderscore(current)) {
+      while (isDigitWithUnderscore(current)) {
         end++
         current = this.code[end]
       }
@@ -191,7 +124,7 @@ export class ClangTokenizer {
       if /* hex */('0x' === this.code.substring(start, start + 2) && isHexDigit(this.code[start + 2])) {
         let end = start + 2
         let current = this.code[end]
-        while (current != undefined && isHexDigitWithUnderscore(current)) {
+        while (isHexDigitWithUnderscore(current)) {
           end++
           current = this.code[end]
         }
@@ -206,7 +139,7 @@ export class ClangTokenizer {
       } else if /* oct */ ('0' === this.code[start] && isOctDigit(this.code[start + 1])) {
         let end = start + 1
         let current = this.code[end]
-        while (current != undefined && isOctDigitWithUnderscore(current)) {
+        while (isOctDigitWithUnderscore(current)) {
           end++
           current = this.code[end]
         }
@@ -221,7 +154,7 @@ export class ClangTokenizer {
       } else if /* float */ ('.' === this.code[start + 1] && isDigit(this.code[start + 2])) {
         let end = start + 2
         let current = this.code[end]
-        while (current != undefined && isDigitWithUnderscore(current)) {
+        while (isDigitWithUnderscore(current)) {
           end++
           current = this.code[end]
         }
@@ -243,14 +176,14 @@ export class ClangTokenizer {
     } else /* dec */ {
       let end = start + 1
       let current = this.code[end]
-      while (current != undefined && isDigitWithUnderscore(current)) {
+      while (isDigitWithUnderscore(current)) {
         end++
         current = this.code[end]
       }
       if (current === '.' && isDigit(this.code[end + 1])) {
         end++
         current = this.code[end]
-        while (current != undefined && isDigitWithUnderscore(current)) {
+        while (isDigitWithUnderscore(current)) {
           end++
           current = this.code[end]
         }
@@ -266,8 +199,92 @@ export class ClangTokenizer {
     }
   }
 
-  private getSymbol(name: string): Token<typeof TokenType.Identifier> {
-    return this.meta.symbols[name]!.token
+  private parseNextStringLiteral(): Token<TokenType.String> | undefined {
+    const start = this.nextPosition - 1
+    if (isDoubleQuote(this.code[start])) {
+      return this.parseDoubleQuoteStringLiteral(start)
+    } else if (isSingleQuote(this.code[start])) {
+      return this.parseSingleQuoteStringLiteral(start)
+    }
+
+    assert(false, "tokenizer.parseNextStringLiteral(): unreachable code, should be handled by isStringLiteralStart in next()")
+  }
+
+  /**
+   * @param start the position of the first double quote
+   */
+  private parseDoubleQuoteStringLiteral(start: number): Token<TokenType.String> {
+    let cursor = start + 1
+    let current = this.code[cursor]
+    let literal = ''
+    while (current !== '"' && isNotEOL(current)) {
+      if (current === '\\' && this.code[cursor + 1] !== undefined) {
+        const escape = getEscape(this.code[++cursor])
+        if (escape === undefined) {
+          throw new Error("TokenizerError: invalid escape character at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
+        }
+
+        literal += escape
+        current = this.code[++cursor]
+        continue
+      }
+
+      literal += current
+      current = this.code[++cursor]
+    }
+    if (current !== '"') {
+      throw new Error("TokenizerError: unterminated string literal at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
+    }
+
+    this.nextPosition = cursor + 1
+    return /* new Token */ {
+      type: TokenType.String,
+      line: this.meta.line,
+      value: literal
+    }
+  }
+
+  /**
+   * @param start the position of the first single quote
+   */
+  private parseSingleQuoteStringLiteral(start: number): Token<TokenType.String> {
+    let literalStart = start + 1
+    if (this.code[literalStart] === '\\') {
+      if (this.code[literalStart + 2] !== "'") {
+        throw new Error("TokenizerError: unterminated string literal at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
+      }
+
+      const escape = getEscape(this.code[literalStart + 1])
+      if (escape === undefined) {
+        throw new Error("TokenizerError: invalid escape character at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
+      }
+
+      this.nextPosition = literalStart + 3
+      return /* new Token */ {
+        type: TokenType.String,
+        line: this.meta.line,
+        value: escape
+      }
+    } else {
+      if (this.code[literalStart + 1] !== "'") {
+        throw new Error("TokenizerError: unterminated string literal at line " + this.meta.line + ". near: " + getCurrentLine(this.code, start))
+      }
+
+      this.next
+      return /* new Token */ {
+        type: TokenType.String,
+        line: this.meta.line,
+        value: this.code[literalStart]
+      }
+    }
+  }
+
+  private until(charSet: Set<string>) {
+    let current = this.code[this.nextPosition]
+    while (!charSet.has(current)) {
+      this.nextPosition++
+      current = this.code[this.nextPosition]
+    }
   }
 
   private symbolNotExists(name: string): boolean {
@@ -285,11 +302,7 @@ export class ClangTokenizer {
     }
   }
 
-  private until(charSet: Set<string>) {
-    let current = this.code[this.nextPosition]
-    while (current != undefined && !charSet.has(current)) {
-      this.nextPosition++
-      current = this.code[this.nextPosition]
-    }
+  private getSymbol(name: string): Token<typeof TokenType.Identifier> {
+    return this.meta.symbols[name]!.token
   }
 }
