@@ -1,39 +1,53 @@
 import assert from "assert"
 import { parseDec, parseHex, parseOct, isDigitWithUnderscore, isDigit, isOctDigitWithUnderscore, isOctDigit, isHexDigitWithUnderscore, isHexDigit, isIdentifierStart, isNumberLiteralStart, isIdentifier, isEOF, isStringLiteralStart, getEscape, getCurrentLine, isDoubleQuote, isSingleQuote, isNotEOL, isNotEOF } from "./utils.mjs"
 
-interface Identifier<TokenTypeGeneric extends TokenType> {
+interface Identifier<TokenTypeGeneric extends `${TokenType}`> {
   name: string
   token: Token<TokenTypeGeneric>
 }
 
-type Token<TokenTypeGeneric extends TokenType> = {
+type Token<TokenTypeGeneric extends `${TokenType}`> = {
   line: number
   type: TokenTypeGeneric
   value: TokenValueType<TokenTypeGeneric>
 }
 
-type TokenValueType<TokenTypeGeneric extends TokenType> =
+type TokenValueType<TokenTypeGeneric extends `${TokenType}`> =
   /*                             TokenType => ValueType */
-  TokenTypeGeneric extends TokenType.Identifier ? string :
-  TokenTypeGeneric extends TokenType.Number ? number :
-  TokenTypeGeneric extends TokenType.String ? string :
-  TokenTypeGeneric extends TokenType.Comment ? string :
-  TokenTypeGeneric extends TokenType.Assign ? undefined :
+  TokenTypeGeneric extends `${TokenType.Identifier}` ? string :
+  TokenTypeGeneric extends `${TokenType.Number}` ? number :
+  TokenTypeGeneric extends `${TokenType.String}` ? string :
+  TokenTypeGeneric extends `${TokenType.Comment}` ? string :
   undefined
 
 export enum TokenType {
-  Identifier, Number, String, Comment, Assign,
-  Increment, Decrement, Add, Subtract, Multiply, Divide, Mod,
-  Equal, NotEqual, LessThan, LessThanEqual, GreaterThan, GreaterThanEqual,
-  ShiftLeft, ShiftRight,
-  LogicOr, LogicAnd, LogicNot, BitwiseOr, BitwiseAnd, BitwiseNot, BitwiseXor,
-  /* () */ LeftParen, RightParen,
-  /* [] */ LeftBracket, RightBracket,
-  /* {} */ LeftBrace, RightBrace,
-  /* ? */ Conditional,
-  /* : */ Colon,
-  /* ; */ Semicolon,
-  /* , */ Comma,
+  Identifier = 'Identifier', Number = 'Number', String = 'String', Comment = 'Comment', Assign = 'Assign',
+  Increment = 'Increment', Decrement = 'Decrement', Add = 'Add', Subtract = 'Subtract', Multiply = 'Multiply', Divide = 'Divide', Mod = 'Mod',
+  Equal = 'Equal', NotEqual = 'NotEqual', LessThan = 'LessThan', LessThanEqual = 'LessThanEqual', GreaterThan = 'GreaterThan', GreaterThanEqual = 'GreaterThanEqual',
+  ShiftLeft = 'ShiftLeft', ShiftRight = 'ShiftRight',
+  LogicOr = 'LogicOr', LogicAnd = 'LogicAnd', LogicNot = 'LogicNot', BitwiseOr = 'BitwiseOr', BitwiseAnd = 'BitwiseAnd', BitwiseNot = 'BitwiseNot', BitwiseXor = 'BitwiseXor',
+  LeftParen = 'LeftParen', RightParen = 'RightParen',
+  LeftBracket = 'LeftBracket', RightBracket = 'RightBracket',
+  LeftBrace = 'LeftBrace', RightBrace = 'RightBrace',
+  Conditional = 'Conditional',
+  Colon = 'Colon',
+  Semicolon = 'Semicolon',
+  Comma = 'Comma',
+
+  // keywords
+  Return = 'Return', If = 'If', Else = 'Else', While = 'While', Enum = 'Enum',
+  Int = 'Int', Char = 'Char', Void = 'Void', SizeOf = 'SizeOf',
+
+  // system calls
+  Open = 'Open', Read = 'Read', Close = 'Close', Printf = 'Printf', Malloc = 'Malloc', Memset = 'Memset', Memcmp = 'Memcmp', Exit = 'Exit',
+}
+
+type KeyWordsTokenType = TokenType.Return | TokenType.If | TokenType.Else | TokenType.While | TokenType.Enum
+  | TokenType.Int | TokenType.Char | TokenType.Void | TokenType.SizeOf
+
+const keywordsTokenMap: Record<string, KeyWordsTokenType> = {
+  'return': TokenType.Return, 'if': TokenType.If, 'else': TokenType.Else, 'while': TokenType.While, 'enum': TokenType.Enum,
+  'int': TokenType.Int, 'char': TokenType.Char, 'void': TokenType.Void, 'sizeof': TokenType.SizeOf
 }
 
 export class ClangTokenizer {
@@ -42,18 +56,18 @@ export class ClangTokenizer {
 
   private meta: {
     line: number
-    symbols: { [key: string]: Identifier<any> | undefined }
+    symbols: (Identifier<TokenType.Identifier | KeyWordsTokenType>)[]
   } =
     {
       line: 1,
-      symbols: {}
+      symbols: []
     }
 
   private constructor(code: string) {
     this.code = code
   }
 
-  public static fromCode(code: string) {
+  public static fromCode(code: string): ClangTokenizer {
     return new ClangTokenizer(code)
   }
 
@@ -370,7 +384,7 @@ export class ClangTokenizer {
     this.until(new Set(['\n', '\0']))
   }
 
-  private parseNextIdentifier(): Token<typeof TokenType.Identifier> | undefined {
+  private parseNextIdentifier(): Token<TokenType.Identifier | KeyWordsTokenType> | undefined {
     const start = this.nextPosition - 1
 
     let end = this.nextPosition
@@ -382,14 +396,10 @@ export class ClangTokenizer {
     this.nextPosition = end
 
     const name = this.code.substring(start, end)
-    if (this.symbolNotExists(name)) {
-      this.insertSymbol(name)
-    }
-
-    return this.getSymbol(name)
+    return this.insertSymbol(name)
   }
 
-  private parseNextNumberLiteral(): Token<typeof TokenType.Number> | undefined {
+  private parseNextNumberLiteral(): Token<TokenType.Number> | undefined {
     const start = this.nextPosition - 1
 
     if /* float */('.' === this.code[start] && isDigit(this.code[start + 1])) {
@@ -589,22 +599,24 @@ export class ClangTokenizer {
     }
   }
 
-  private symbolNotExists(name: string): boolean {
-    return !(name in this.meta.symbols)
-  }
-
-  private insertSymbol(name: string) {
-    this.meta.symbols[name] = {
-      name,
-      token: {
+  private insertSymbol(name: string): Token<TokenType.Identifier | KeyWordsTokenType> {
+    let token
+    if (keywordsTokenMap[name] !== undefined) {
+      token = {
+        type: keywordsTokenMap[name],
+        value: undefined,
+        line: this.meta.line
+      } as const
+    } else {
+      token = {
         type: TokenType.Identifier,
         value: name,
         line: this.meta.line
-      },
+      } as const
     }
-  }
 
-  private getSymbol(name: string): Token<typeof TokenType.Identifier> {
-    return this.meta.symbols[name]!.token
+
+    this.meta.symbols.push({ name, token })
+    return token
   }
 }

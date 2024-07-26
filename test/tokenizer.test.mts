@@ -95,8 +95,23 @@ describe("ClangTokenizer", () => {
       )
 
       it(
-        "should not tokenize a keyword", () => {
-          // pass
+        "tokenize keyword", () => {
+          const tokenizer = ClangTokenizer.fromCode("return if else while enum \nint char void sizeof\n")
+
+          assert.deepEqual(
+            array(9).map(tokenizer.next.bind(tokenizer)),
+            [
+              { type: TokenType.Return, value: undefined, line: 1 },
+              { type: TokenType.If, value: undefined, line: 1 },
+              { type: TokenType.Else, value: undefined, line: 1 },
+              { type: TokenType.While, value: undefined, line: 1 },
+              { type: TokenType.Enum, value: undefined, line: 1 },
+              { type: TokenType.Int, value: undefined, line: 2 },
+              { type: TokenType.Char, value: undefined, line: 2 },
+              { type: TokenType.Void, value: undefined, line: 2 },
+              { type: TokenType.SizeOf, value: undefined, line: 2 },
+            ]
+          )
         }
       )
     })
