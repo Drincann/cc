@@ -18,10 +18,22 @@ type TokenValueType<TokenTypeGeneric extends TokenType> =
   TokenTypeGeneric extends TokenType.Number ? number :
   TokenTypeGeneric extends TokenType.String ? string :
   TokenTypeGeneric extends TokenType.Comment ? string :
-  never
+  TokenTypeGeneric extends TokenType.Assign ? undefined :
+  undefined
 
 export enum TokenType {
-  Identifier, Number, String, Comment
+  Identifier, Number, String, Comment, Assign,
+  Increment, Decrement, Add, Subtract, Multiply, Divide, Mod,
+  Equal, NotEqual, LessThan, LessThanEqual, GreaterThan, GreaterThanEqual,
+  ShiftLeft, ShiftRight,
+  LogicOr, LogicAnd, LogicNot, BitwiseOr, BitwiseAnd, BitwiseNot, BitwiseXor,
+  /* () */ LeftParen, RightParen,
+  /* [] */ LeftBracket, RightBracket,
+  /* {} */ LeftBrace, RightBrace,
+  /* ? */ Conditional,
+  /* : */ Colon,
+  /* ; */ Semicolon,
+  /* , */ Comma,
 }
 
 export class ClangTokenizer {
@@ -80,9 +92,278 @@ export class ClangTokenizer {
       if (this.isCommentStart(current)) {
         return this.parseNextComment()
       }
-    }
 
-    return undefined;
+      if (current === '=') {
+        if (this.code[this.nextPosition] === '=') {
+          this.nextPosition++;
+          return {
+            line: this.meta.line,
+            type: TokenType.Equal,
+            value: undefined
+          };
+        } else {
+          return {
+            line: this.meta.line,
+            type: TokenType.Assign,
+            value: undefined
+          };
+        }
+      }
+
+      if (current === '+') {
+        if (this.code[this.nextPosition] === '+') {
+          this.nextPosition++;
+          return {
+            line: this.meta.line,
+            type: TokenType.Increment,
+            value: undefined
+          };
+        } else {
+          return {
+            line: this.meta.line,
+            type: TokenType.Add,
+            value: undefined
+          };
+        }
+      }
+
+      if (current === '-') {
+        if (this.code[this.nextPosition] === '-') {
+          this.nextPosition++;
+          return {
+            line: this.meta.line,
+            type: TokenType.Decrement,
+            value: undefined
+          };
+        } else {
+          return {
+            line: this.meta.line,
+            type: TokenType.Subtract,
+            value: undefined
+          };
+        }
+      }
+
+      if (current === '*') {
+        return {
+          line: this.meta.line,
+          type: TokenType.Multiply,
+          value: undefined
+        };
+      }
+
+      if (current === '/') {
+        return {
+          line: this.meta.line,
+          type: TokenType.Divide,
+          value: undefined
+        };
+      }
+
+      if (current === '%') {
+        return {
+          line: this.meta.line,
+          type: TokenType.Mod,
+          value: undefined
+        };
+      }
+
+      if (current === '!') {
+        if (this.code[this.nextPosition] === '=') {
+          this.nextPosition++;
+          return {
+            line: this.meta.line,
+            type: TokenType.NotEqual,
+            value: undefined
+          };
+        } else {
+          return {
+            line: this.meta.line,
+            type: TokenType.LogicNot,
+            value: undefined
+          }
+        }
+      }
+
+      if (current === '<') {
+        if (this.code[this.nextPosition] === '=') {
+          this.nextPosition++;
+          return {
+            line: this.meta.line,
+            type: TokenType.LessThanEqual,
+            value: undefined
+          };
+        } else if (this.code[this.nextPosition] === '<') {
+          this.nextPosition++;
+          return {
+            line: this.meta.line,
+            type: TokenType.ShiftLeft,
+            value: undefined
+          };
+        } else {
+          return {
+            line: this.meta.line,
+            type: TokenType.LessThan,
+            value: undefined
+          };
+        }
+      }
+
+      if (current === '>') {
+        if (this.code[this.nextPosition] === '=') {
+          this.nextPosition++
+          return {
+            line: this.meta.line,
+            type: TokenType.GreaterThanEqual,
+            value: undefined
+          };
+        } else if (this.code[this.nextPosition] === '>') {
+          this.nextPosition++
+          return {
+            line: this.meta.line,
+            type: TokenType.ShiftRight,
+            value: undefined
+          };
+        } else {
+          return {
+            line: this.meta.line,
+            type: TokenType.GreaterThan,
+            value: undefined
+          };
+        }
+      }
+
+      if (current === '&') {
+        if (this.code[this.nextPosition] === '&') {
+          this.nextPosition++
+          return {
+            line: this.meta.line,
+            type: TokenType.LogicAnd,
+            value: undefined
+          };
+        } else {
+          return {
+            line: this.meta.line,
+            type: TokenType.BitwiseAnd,
+            value: undefined
+          };
+        }
+      }
+
+      if (current === '|') {
+        if (this.code[this.nextPosition] === '|') {
+          this.nextPosition++
+          return {
+            line: this.meta.line,
+            type: TokenType.LogicOr,
+            value: undefined
+          };
+        } else {
+          return {
+            line: this.meta.line,
+            type: TokenType.BitwiseOr,
+            value: undefined
+          };
+        }
+      }
+
+      if (current === '^') {
+        return {
+          line: this.meta.line,
+          type: TokenType.BitwiseXor,
+          value: undefined
+        };
+      }
+
+      if (current === '~') {
+        return {
+          line: this.meta.line,
+          type: TokenType.BitwiseNot,
+          value: undefined
+        };
+      }
+
+      if (current === '(') {
+        return {
+          line: this.meta.line,
+          type: TokenType.LeftParen,
+          value: undefined
+        };
+      }
+
+      if (current === ')') {
+        return {
+          line: this.meta.line,
+          type: TokenType.RightParen,
+          value: undefined
+        };
+      }
+
+      if (current === '[') {
+        return {
+          line: this.meta.line,
+          type: TokenType.LeftBracket,
+          value: undefined
+        };
+      }
+
+      if (current === ']') {
+        return {
+          line: this.meta.line,
+          type: TokenType.RightBracket,
+          value: undefined
+        };
+      }
+
+      if (current === '{') {
+        return {
+          line: this.meta.line,
+          type: TokenType.LeftBrace,
+          value: undefined
+        };
+      }
+
+      if (current === '}') {
+        return {
+          line: this.meta.line,
+          type: TokenType.RightBrace,
+          value: undefined
+        };
+      }
+
+      if (current === '?') {
+        return {
+          line: this.meta.line,
+          type: TokenType.Conditional,
+          value: undefined
+        };
+      }
+
+      if (current === ':') {
+        return {
+          line: this.meta.line,
+          type: TokenType.Colon,
+          value: undefined
+        };
+      }
+
+      if (current === ';') {
+        return {
+          line: this.meta.line,
+          type: TokenType.Semicolon,
+          value: undefined
+        }
+      }
+
+      if (current === ',') {
+        return {
+          line: this.meta.line,
+          type: TokenType.Comma,
+          value: undefined
+        };
+      }
+    } // end while
+    return undefined
   }
 
   private skipMacro() {

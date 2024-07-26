@@ -578,5 +578,128 @@ describe("ClangTokenizer", () => {
         }
       )
     }) // suite comment
+
+    describe("division", () => {
+      it("division and comment",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode(" / // ")
+          const token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Divide,
+            value: undefined,
+            line: 1,
+          })
+
+          assert.deepEqual(tokenizer.next(), {
+            type: TokenType.Comment,
+            value: " ",
+            line: 1,
+          })
+        }
+      )
+
+      it("division and comment - 1",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode("///")
+          const token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Comment,
+            value: "/",
+            line: 1,
+          })
+        }
+      )
+    })
+
+    describe("others", () => {
+      it("all",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode(" = \n+++---*/%!=< <=> >=<<>>|||&&&!~^([{)]}?:;,")
+          const actual = array(33).map(tokenizer.next.bind(tokenizer))
+          console.log(actual)
+          assert.deepEqual(
+            actual,
+            [
+              { type: TokenType.Assign, value: undefined, line: 1 },
+              { type: TokenType.Increment, value: undefined, line: 2 },
+              { type: TokenType.Add, value: undefined, line: 2 },
+              { type: TokenType.Decrement, value: undefined, line: 2 },
+              { type: TokenType.Subtract, value: undefined, line: 2 },
+              { type: TokenType.Multiply, value: undefined, line: 2 },
+              { type: TokenType.Divide, value: undefined, line: 2 },
+              { type: TokenType.Mod, value: undefined, line: 2 },
+              { type: TokenType.NotEqual, value: undefined, line: 2 },
+              { type: TokenType.LessThan, value: undefined, line: 2 },
+              { type: TokenType.LessThanEqual, value: undefined, line: 2 },
+              { type: TokenType.GreaterThan, value: undefined, line: 2 },
+              { type: TokenType.GreaterThanEqual, value: undefined, line: 2 },
+              { type: TokenType.ShiftLeft, value: undefined, line: 2 },
+              { type: TokenType.ShiftRight, value: undefined, line: 2 },
+              { type: TokenType.LogicOr, value: undefined, line: 2 },
+              { type: TokenType.BitwiseOr, value: undefined, line: 2 },
+              { type: TokenType.LogicAnd, value: undefined, line: 2 },
+              { type: TokenType.BitwiseAnd, value: undefined, line: 2 },
+              { type: TokenType.LogicNot, value: undefined, line: 2 },
+              { type: TokenType.BitwiseNot, value: undefined, line: 2 },
+              { type: TokenType.BitwiseXor, value: undefined, line: 2 },
+              { type: TokenType.LeftParen, value: undefined, line: 2 },
+              { type: TokenType.LeftBracket, value: undefined, line: 2 },
+              { type: TokenType.LeftBrace, value: undefined, line: 2 },
+              { type: TokenType.RightParen, value: undefined, line: 2 },
+              { type: TokenType.RightBracket, value: undefined, line: 2 },
+              { type: TokenType.RightBrace, value: undefined, line: 2 },
+              { type: TokenType.Conditional, value: undefined, line: 2 },
+              { type: TokenType.Colon, value: undefined, line: 2 },
+              { type: TokenType.Semicolon, value: undefined, line: 2 },
+              { type: TokenType.Comma, value: undefined, line: 2 },
+              undefined
+            ],
+          )
+        })
+    }) // suite others
+
+    describe("use cases", () => {
+      it(
+        "assign",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode("a = 123;")
+          let token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Identifier,
+            value: "a",
+            line: 1,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Assign,
+            value: undefined,
+            line: 1,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Number,
+            value: 123,
+            line: 1,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Semicolon,
+            value: undefined,
+            line: 1,
+          })
+
+          token = tokenizer.next()
+          assert.equal(token, undefined)
+        }
+      )
+
+    }) // suite use cases
   }) // suite next
 }) // suite ClangTokenizer
+
+function array(size: number) {
+  return Array.from({ length: size })
+}
