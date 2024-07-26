@@ -1,5 +1,5 @@
 import assert from "assert"
-import { parseDec, parseHex, parseOct, isDigitWithUnderscore, isDigit, isOctDigitWithUnderscore, isOctDigit, isHexDigitWithUnderscore, isHexDigit, isIdentifierStart, isNumberLiteralStart, isIdentifier, isEOF, isStringLiteralStart, getEscape, getCurrentLine, isDoubleQuote, isSingleQuote, isNotEOL } from "./utils.mjs"
+import { parseDec, parseHex, parseOct, isDigitWithUnderscore, isDigit, isOctDigitWithUnderscore, isOctDigit, isHexDigitWithUnderscore, isHexDigit, isIdentifierStart, isNumberLiteralStart, isIdentifier, isEOF, isStringLiteralStart, getEscape, getCurrentLine, isDoubleQuote, isSingleQuote, isNotEOL, isNotEOF } from "./utils.mjs"
 
 interface Identifier<TokenTypeGeneric extends TokenType> {
   name: string
@@ -13,13 +13,15 @@ type Token<TokenTypeGeneric extends TokenType> = {
 }
 
 type TokenValueType<TokenTypeGeneric extends TokenType> =
+  /*                             TokenType => ValueType */
   TokenTypeGeneric extends TokenType.Identifier ? string :
   TokenTypeGeneric extends TokenType.Number ? number :
   TokenTypeGeneric extends TokenType.String ? string :
+  TokenTypeGeneric extends TokenType.Comment ? string :
   never
 
 export enum TokenType {
-  Identifier, Number, String
+  Identifier, Number, String, Comment
 }
 
 export class ClangTokenizer {
@@ -74,9 +76,27 @@ export class ClangTokenizer {
       if (isStringLiteralStart(current)) {
         return this.parseNextStringLiteral()
       }
+
+      if (this.isCommentStart(current)) {
+        return this.parseNextComment()
+      }
     }
 
     return undefined;
+  }
+  private parseNextComment(): Token<TokenType.Comment> | undefined {
+    const start = this.nextPosition - 1
+    this.until(new Set(['\n', '\0']))
+
+    return {
+      type: TokenType.Comment,
+      line: this.meta.line,
+      value: this.code.substring(start + 2, this.nextPosition)
+    }
+  }
+
+  private isCommentStart(char: string): boolean {
+    return char === '/' && this.code[this.nextPosition] === '/'
   }
 
   private skipMacro() {
@@ -281,7 +301,7 @@ export class ClangTokenizer {
 
   private until(charSet: Set<string>) {
     let current = this.code[this.nextPosition]
-    while (!charSet.has(current)) {
+    while (!charSet.has(current) && isNotEOF(current)) {
       this.nextPosition++
       current = this.code[this.nextPosition]
     }

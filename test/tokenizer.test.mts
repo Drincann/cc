@@ -522,5 +522,61 @@ describe("ClangTokenizer", () => {
       )
 
     }) // suite string
+
+    describe("comment", () => {
+      it(
+        "empty comment",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode("//\n// \n //\n // ")
+          let token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Comment,
+            value: "",
+            line: 1,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Comment,
+            value: " ",
+            line: 2,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Comment,
+            value: "",
+            line: 3,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Comment,
+            value: " ",
+            line: 4,
+          })
+        }
+      )
+
+      it(
+        "empty comment",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode("//\n1\n")
+          let token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Comment,
+            value: "",
+            line: 1,
+          })
+
+          token = tokenizer.next()
+          assert.deepEqual(token, {
+            type: TokenType.Number,
+            value: 1,
+            line: 2,
+          })
+        }
+      )
+    }) // suite comment
   }) // suite next
 }) // suite ClangTokenizer
