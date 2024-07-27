@@ -1,5 +1,5 @@
 int main()
 {
-  char *str = "echo \"Hello, World!\"\n";
+  int a = 10 + 20 * 3;
   return 0;
 }
