@@ -1,4 +1,5 @@
 const _0_ASCII = '0'.charCodeAt(0)
+
 export function parseDec(value: string): number {
   const [integerPart, decimalPart] = value.split(".")
   return parseInteger(integerPart) + (decimalPart ? parseInteger(decimalPart) / Math.pow(10, decimalPart.length) : 0)

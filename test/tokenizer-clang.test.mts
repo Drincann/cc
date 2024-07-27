@@ -1,7 +1,7 @@
 import { describe, it } from "node:test"
 import assert from 'assert/strict'
-import { ClangTokenizer } from '../src/tokenizer.mjs'
-import { TokenType } from "../src/tokenizer.mjs"
+import { ClangTokenizer } from "../src/tokenizer/index.mjs"
+import { ClangTokenType } from "../src/tokenizer/index.mjs"
 
 describe("ClangTokenizer", () => {
   describe("#next()", () => {
@@ -13,7 +13,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("a")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Identifier,
+            type: ClangTokenType.Identifier,
             value: "a",
             line: 1,
           })
@@ -26,7 +26,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("abc_123")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Identifier,
+            type: ClangTokenType.Identifier,
             value: "abc_123",
             line: 1,
           })
@@ -39,21 +39,21 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("abc_123	__1  _z3z")
           let token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Identifier,
+            type: ClangTokenType.Identifier,
             value: "abc_123",
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Identifier,
+            type: ClangTokenType.Identifier,
             value: "__1",
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Identifier,
+            type: ClangTokenType.Identifier,
             value: "_z3z",
             line: 1,
           })
@@ -69,21 +69,21 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("abc_123	\n__1\n  _z3z")
           let token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Identifier,
+            type: ClangTokenType.Identifier,
             value: "abc_123",
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Identifier,
+            type: ClangTokenType.Identifier,
             value: "__1",
             line: 2,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Identifier,
+            type: ClangTokenType.Identifier,
             value: "_z3z",
             line: 3,
           })
@@ -101,15 +101,15 @@ describe("ClangTokenizer", () => {
           assert.deepEqual(
             array(9).map(tokenizer.next.bind(tokenizer)),
             [
-              { type: TokenType.Return, value: undefined, line: 1 },
-              { type: TokenType.If, value: undefined, line: 1 },
-              { type: TokenType.Else, value: undefined, line: 1 },
-              { type: TokenType.While, value: undefined, line: 1 },
-              { type: TokenType.Enum, value: undefined, line: 1 },
-              { type: TokenType.Int, value: undefined, line: 2 },
-              { type: TokenType.Char, value: undefined, line: 2 },
-              { type: TokenType.Void, value: undefined, line: 2 },
-              { type: TokenType.SizeOf, value: undefined, line: 2 },
+              { type: ClangTokenType.Return, value: undefined, line: 1 },
+              { type: ClangTokenType.If, value: undefined, line: 1 },
+              { type: ClangTokenType.Else, value: undefined, line: 1 },
+              { type: ClangTokenType.While, value: undefined, line: 1 },
+              { type: ClangTokenType.Enum, value: undefined, line: 1 },
+              { type: ClangTokenType.Int, value: undefined, line: 2 },
+              { type: ClangTokenType.Char, value: undefined, line: 2 },
+              { type: ClangTokenType.Void, value: undefined, line: 2 },
+              { type: ClangTokenType.SizeOf, value: undefined, line: 2 },
             ]
           )
         }
@@ -124,7 +124,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("0")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0,
             line: 1,
           })
@@ -137,7 +137,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("123")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 123,
             line: 1,
           })
@@ -150,7 +150,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("1.23")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 1.23,
             line: 1,
           })
@@ -163,7 +163,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("0.123")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0.123,
             line: 1,
           })
@@ -176,7 +176,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode(".123")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0.123,
             line: 1,
           })
@@ -189,21 +189,21 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("1_2_3 1.2_3 .12__3")
           let token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 123,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 1.23,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0.123,
             line: 1,
           })
@@ -216,7 +216,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("0x123abcdef")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0x123abcdef,
             line: 1,
           })
@@ -229,7 +229,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("0x123abcdefg")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0x123abcdef,
             line: 1,
           })
@@ -242,7 +242,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("00")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0o0,
             line: 1,
           })
@@ -255,7 +255,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("01234567")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0o1234567,
             line: 1,
           })
@@ -268,7 +268,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("012345678")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0o1234567,
             line: 1,
           })
@@ -281,14 +281,14 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("081")
           let token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 81,
             line: 1,
           })
@@ -300,7 +300,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("0x")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0,
             line: 1,
           })
@@ -313,42 +313,42 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode(" 123   0x456 0x7af89 0.00001 079")
           let token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 123,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0x456,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0x7af89,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0.00001,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0o7,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 9,
             line: 1,
           })
@@ -361,42 +361,42 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode(" 123   \n0x456 0x7af89\n 0.00001 079")
           let token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 123,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0x456,
             line: 2,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0x7af89,
             line: 2,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0.00001,
             line: 3,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 0o7,
             line: 3,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 9,
             line: 3,
           })
@@ -411,7 +411,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode('"abc"')
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.String,
+            type: ClangTokenType.String,
             value: "abc",
             line: 1,
           })
@@ -424,7 +424,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode('"c\\"d"')
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.String,
+            type: ClangTokenType.String,
             value: 'c"d',
             line: 1,
           })
@@ -436,7 +436,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode('"\\"def"')
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.String,
+            type: ClangTokenType.String,
             value: '"def',
             line: 1,
           })
@@ -449,7 +449,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode('"abc\\""')
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.String,
+            type: ClangTokenType.String,
             value: 'abc"',
             line: 1,
           })
@@ -462,7 +462,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode('"a b c"')
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.String,
+            type: ClangTokenType.String,
             value: 'a b c',
             line: 1,
           })
@@ -475,7 +475,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode('"\\r\\0\\t\\n"')
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.String,
+            type: ClangTokenType.String,
             value: '\r\0\t\n',
             line: 1,
           })
@@ -488,7 +488,7 @@ describe("ClangTokenizer", () => {
           let tokenizer = ClangTokenizer.fromCode("'\0'")
           let token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.String,
+            type: ClangTokenType.String,
             value: '\0',
             line: 1,
           })
@@ -496,7 +496,7 @@ describe("ClangTokenizer", () => {
           tokenizer = ClangTokenizer.fromCode("'\r'")
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.String,
+            type: ClangTokenType.String,
             value: '\r',
             line: 1,
           })
@@ -504,7 +504,7 @@ describe("ClangTokenizer", () => {
           tokenizer = ClangTokenizer.fromCode("'\t'")
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.String,
+            type: ClangTokenType.String,
             value: '\t',
             line: 1,
           })
@@ -512,7 +512,7 @@ describe("ClangTokenizer", () => {
           tokenizer = ClangTokenizer.fromCode("'\n'")
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.String,
+            type: ClangTokenType.String,
             value: '\n',
             line: 1,
           })
@@ -545,28 +545,28 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("//\n// \n //\n // ")
           let token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Comment,
+            type: ClangTokenType.Comment,
             value: "",
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Comment,
+            type: ClangTokenType.Comment,
             value: " ",
             line: 2,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Comment,
+            type: ClangTokenType.Comment,
             value: "",
             line: 3,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Comment,
+            type: ClangTokenType.Comment,
             value: " ",
             line: 4,
           })
@@ -579,14 +579,14 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("//\n1\n")
           let token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Comment,
+            type: ClangTokenType.Comment,
             value: "",
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 1,
             line: 2,
           })
@@ -600,13 +600,13 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode(" / // ")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Divide,
+            type: ClangTokenType.Divide,
             value: undefined,
             line: 1,
           })
 
           assert.deepEqual(tokenizer.next(), {
-            type: TokenType.Comment,
+            type: ClangTokenType.Comment,
             value: " ",
             line: 1,
           })
@@ -618,7 +618,7 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("///")
           const token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Comment,
+            type: ClangTokenType.Comment,
             value: "/",
             line: 1,
           })
@@ -635,38 +635,38 @@ describe("ClangTokenizer", () => {
           assert.deepEqual(
             actual,
             [
-              { type: TokenType.Assign, value: undefined, line: 1 },
-              { type: TokenType.Increment, value: undefined, line: 2 },
-              { type: TokenType.Add, value: undefined, line: 2 },
-              { type: TokenType.Decrement, value: undefined, line: 2 },
-              { type: TokenType.Subtract, value: undefined, line: 2 },
-              { type: TokenType.Multiply, value: undefined, line: 2 },
-              { type: TokenType.Divide, value: undefined, line: 2 },
-              { type: TokenType.Mod, value: undefined, line: 2 },
-              { type: TokenType.NotEqual, value: undefined, line: 2 },
-              { type: TokenType.LessThan, value: undefined, line: 2 },
-              { type: TokenType.LessThanEqual, value: undefined, line: 2 },
-              { type: TokenType.GreaterThan, value: undefined, line: 2 },
-              { type: TokenType.GreaterThanEqual, value: undefined, line: 2 },
-              { type: TokenType.ShiftLeft, value: undefined, line: 2 },
-              { type: TokenType.ShiftRight, value: undefined, line: 2 },
-              { type: TokenType.LogicOr, value: undefined, line: 2 },
-              { type: TokenType.BitwiseOr, value: undefined, line: 2 },
-              { type: TokenType.LogicAnd, value: undefined, line: 2 },
-              { type: TokenType.BitwiseAnd, value: undefined, line: 2 },
-              { type: TokenType.LogicNot, value: undefined, line: 2 },
-              { type: TokenType.BitwiseNot, value: undefined, line: 2 },
-              { type: TokenType.BitwiseXor, value: undefined, line: 2 },
-              { type: TokenType.LeftParen, value: undefined, line: 2 },
-              { type: TokenType.LeftBracket, value: undefined, line: 2 },
-              { type: TokenType.LeftBrace, value: undefined, line: 2 },
-              { type: TokenType.RightParen, value: undefined, line: 2 },
-              { type: TokenType.RightBracket, value: undefined, line: 2 },
-              { type: TokenType.RightBrace, value: undefined, line: 2 },
-              { type: TokenType.Conditional, value: undefined, line: 2 },
-              { type: TokenType.Colon, value: undefined, line: 2 },
-              { type: TokenType.Semicolon, value: undefined, line: 2 },
-              { type: TokenType.Comma, value: undefined, line: 2 },
+              { type: ClangTokenType.Assign, value: undefined, line: 1 },
+              { type: ClangTokenType.Increment, value: undefined, line: 2 },
+              { type: ClangTokenType.Add, value: undefined, line: 2 },
+              { type: ClangTokenType.Decrement, value: undefined, line: 2 },
+              { type: ClangTokenType.Subtract, value: undefined, line: 2 },
+              { type: ClangTokenType.Multiply, value: undefined, line: 2 },
+              { type: ClangTokenType.Divide, value: undefined, line: 2 },
+              { type: ClangTokenType.Mod, value: undefined, line: 2 },
+              { type: ClangTokenType.NotEqual, value: undefined, line: 2 },
+              { type: ClangTokenType.LessThan, value: undefined, line: 2 },
+              { type: ClangTokenType.LessThanEqual, value: undefined, line: 2 },
+              { type: ClangTokenType.GreaterThan, value: undefined, line: 2 },
+              { type: ClangTokenType.GreaterThanEqual, value: undefined, line: 2 },
+              { type: ClangTokenType.ShiftLeft, value: undefined, line: 2 },
+              { type: ClangTokenType.ShiftRight, value: undefined, line: 2 },
+              { type: ClangTokenType.LogicOr, value: undefined, line: 2 },
+              { type: ClangTokenType.BitwiseOr, value: undefined, line: 2 },
+              { type: ClangTokenType.LogicAnd, value: undefined, line: 2 },
+              { type: ClangTokenType.BitwiseAnd, value: undefined, line: 2 },
+              { type: ClangTokenType.LogicNot, value: undefined, line: 2 },
+              { type: ClangTokenType.BitwiseNot, value: undefined, line: 2 },
+              { type: ClangTokenType.BitwiseXor, value: undefined, line: 2 },
+              { type: ClangTokenType.LeftParen, value: undefined, line: 2 },
+              { type: ClangTokenType.LeftBracket, value: undefined, line: 2 },
+              { type: ClangTokenType.LeftBrace, value: undefined, line: 2 },
+              { type: ClangTokenType.RightParen, value: undefined, line: 2 },
+              { type: ClangTokenType.RightBracket, value: undefined, line: 2 },
+              { type: ClangTokenType.RightBrace, value: undefined, line: 2 },
+              { type: ClangTokenType.Conditional, value: undefined, line: 2 },
+              { type: ClangTokenType.Colon, value: undefined, line: 2 },
+              { type: ClangTokenType.Semicolon, value: undefined, line: 2 },
+              { type: ClangTokenType.Comma, value: undefined, line: 2 },
               undefined
             ],
           )
@@ -680,28 +680,28 @@ describe("ClangTokenizer", () => {
           const tokenizer = ClangTokenizer.fromCode("a = 123;")
           let token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Identifier,
+            type: ClangTokenType.Identifier,
             value: "a",
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Assign,
+            type: ClangTokenType.Assign,
             value: undefined,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Number,
+            type: ClangTokenType.Number,
             value: 123,
             line: 1,
           })
 
           token = tokenizer.next()
           assert.deepEqual(token, {
-            type: TokenType.Semicolon,
+            type: ClangTokenType.Semicolon,
             value: undefined,
             line: 1,
           })

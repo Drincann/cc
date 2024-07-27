@@ -50,7 +50,7 @@ const keywordsTokenMap: Record<string, KeyWordsTokenType> = {
   'int': TokenType.Int, 'char': TokenType.Char, 'void': TokenType.Void, 'sizeof': TokenType.SizeOf
 }
 
-export class ClangTokenizer {
+export class Tokenizer {
   private code: string
   private nextPosition: number = 0
 
@@ -67,8 +67,8 @@ export class ClangTokenizer {
     this.code = code
   }
 
-  public static fromCode(code: string): ClangTokenizer {
-    return new ClangTokenizer(code)
+  public static fromCode(code: string): Tokenizer {
+    return new Tokenizer(code)
   }
 
   public next(): Token<any> | undefined {

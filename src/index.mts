@@ -1,4 +1,4 @@
-import { ClangTokenizer } from './tokenizer.mjs'
+import { ClangTokenizer } from './tokenizer/index.mjs'
 import fs from 'fs/promises'
 
 const args = process.argv.slice(2)
@@ -15,6 +15,7 @@ if (await fileNotExists(args[0])) {
 
 interpret(await fs.readFile(args[0], 'utf-8'))
 
+// script end
 async function fileNotExists(filename: string): Promise<boolean> {
   return await fs.access(filename).then(() => false).catch(() => true)
 }

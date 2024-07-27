@@ -1,6 +1,6 @@
 import { describe, it } from "node:test"
 import assert from 'assert/strict'
-import { parseDec, parseHex, parseOct } from "../src/utils.mjs"
+import { parseDec, parseHex, parseOct } from "../src/tokenizer/utils.mjs"
 
 describe("utils", () => {
   describe("#parseDecimal", () => {
