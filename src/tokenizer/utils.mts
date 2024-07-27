@@ -66,6 +66,10 @@ export function isDigit(char: string): boolean {
   return char >= '0' && char <= '9'
 }
 
+export function decNumber(char: string): boolean {
+  return char >= '0' && char <= '9' || char === '.'
+}
+
 export function isDigitWithUnderscore(char: string): boolean {
   return isDigit(char) || char === '_'
 }
@@ -88,6 +92,10 @@ export function isOctDigitWithUnderscore(char: string): boolean {
 
 export function isNumberLiteralStart(char: string): boolean {
   return isDigit(char) || char === '.'
+}
+
+export function isDecLiteralStart(char: string): boolean {
+  return char >= '1' && char <= '9'
 }
 
 export function isStringLiteralStart(current: string): boolean {
