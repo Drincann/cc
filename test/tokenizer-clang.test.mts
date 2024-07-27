@@ -631,7 +631,6 @@ describe("ClangTokenizer", () => {
         () => {
           const tokenizer = ClangTokenizer.fromCode(" = \n+++---*/%!=< <=> >=<<>>|||&&&!~^([{)]}?:;,")
           const actual = array(33).map(tokenizer.next.bind(tokenizer))
-          console.log(actual)
           assert.deepEqual(
             actual,
             [
