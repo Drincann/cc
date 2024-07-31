@@ -1,15 +1,16 @@
 import { decNumber, isDecLiteralStart, isNotEOF, parseDec } from "./utils.mjs"
 
-export interface Token<TokenTypeGeneric extends TokenType> {
+export interface Token<TokenTypeGeneric extends TokenType = TokenType> {
   type: TokenTypeGeneric
   value: TokenValue<TokenTypeGeneric>
+  original: string
 }
 
 type TokenValue<TokenTypeGeneric extends TokenType> =
   TokenTypeGeneric extends 'Number' ? number :
   undefined
 
-type TokenType =
+export type TokenType =
   | 'Number'
   | 'Add'
   | 'Subtract'
@@ -41,38 +42,39 @@ export class Tokenizer {
         const literal = this.expression.substring(start, this.cursor)
         return /* new Token */ {
           value: parseDec(literal),
-          type: 'Number'
+          type: 'Number',
+          original: literal
         }
       }
 
       if (current === '+') {
         this.cursor++
-        return { type: 'Add', value: undefined }
+        return { type: 'Add', value: undefined, original: '+' }
       }
 
       if (current === '-') {
         this.cursor++
-        return { type: 'Subtract', value: undefined }
+        return { type: 'Subtract', value: undefined, original: '-' }
       }
 
       if (current === '*') {
         this.cursor++
-        return { type: 'Multiply', value: undefined }
+        return { type: 'Multiply', value: undefined, original: '*' }
       }
 
       if (current === '/') {
         this.cursor++
-        return { type: 'Divide', value: undefined }
+        return { type: 'Divide', value: undefined, original: '/' }
       }
 
       if (current === '(') {
         this.cursor++
-        return { type: 'LeftParen', value: undefined }
+        return { type: 'LeftParen', value: undefined, original: '(' }
       }
 
       if (current === ')') {
         this.cursor++
-        return { type: 'RightParen', value: undefined }
+        return { type: 'RightParen', value: undefined, original: ')' }
       }
 
       this.cursor++
