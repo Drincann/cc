@@ -203,6 +203,35 @@ describe("VirtualMachine", () => {
       }
     )
 
+    it(
+      "reset",
+      () => {
+        const vm = new VirtualMachine(10);
+
+        vm.program([
+          Instruction.IMM(8),
+          Instruction.PUSH(),
+          Instruction.SI(),
+          Instruction.IMM(7),
+          Instruction.LI(),
+        ]).run()
+        const snapshot1 = vm.snapshot()
+
+        vm.program([
+          Instruction.IMM(8),
+          Instruction.PUSH(),
+          Instruction.SI(),
+          Instruction.IMM(7),
+          Instruction.LI(),
+        ]).run()
+        const snapshot2 = vm.snapshot()
+
+        assert.deepEqual(
+          snapshot1, snapshot2
+        )
+      }
+    )
+
   }) // suite run
 }) // suite ClangTokenizer
 
