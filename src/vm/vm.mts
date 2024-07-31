@@ -15,6 +15,7 @@ const instructionNames = {
   5: 'SUB', // SUB -- subtract AX from stack top
   6: 'MUL', // MUL -- multiply stack top by AX
   7: 'DIV', // DIV -- divide stack top by AX
+  8: 'POP' // POP -- pop stack top to AX
   // system calls
 } as const
 // inst name --> inst code
@@ -36,6 +37,10 @@ export class Instruction<Type extends InstructionType = InstructionType> {
     VirtualMachineError.assertNonNull(this.args, 'Instruction args must be non-null')
 
     return [instructionCodes[this.type], ...(this.args.filter(arg => arg !== undefined))]
+  }
+
+  public toString(): string {
+    return this.type + ' ' + this.args.join(' ')
   }
 
   public static IMM(num: number): Instruction<'IMM'> {
@@ -69,8 +74,13 @@ export class Instruction<Type extends InstructionType = InstructionType> {
   public static DIV(): Instruction<'DIV'> {
     return new Instruction('DIV', undefined)
   }
+
+  public static POP(): Instruction<'POP'> {
+    return new Instruction('POP', undefined)
+  }
 }
 export class VirtualMachine {
+  private instuctions: Instruction[] = []
   private memory: number[]
 
   // the top of the text segment
@@ -88,6 +98,7 @@ export class VirtualMachine {
 
   public program(instructions: Instruction[]): VirtualMachine {
     this.reset()
+    this.instuctions = shallowCopy(instructions)
     this.copy(instructions.flatMap(inst => inst.flatten()), this.memory)
     this.sp = this.memory.length
     this.bp = this.sp
@@ -187,6 +198,18 @@ export class VirtualMachine {
 
       else if (inst == 'DIV') {
         this.ax = this.memory[this.sp++] / this.ax
+      }
+
+      else if (inst == 'POP') {
+        VirtualMachineError.assert(
+          this.sp < this.memory.length,
+          'The address being popped from the stack (' + this.sp + ') has reached the bottom of the stack, causing a stack underflow'
+        )
+        this.ax = this.memory[this.sp++]
+      }
+
+      else {
+        throw new VirtualMachineError('Unknown instruction: ' + inst)
       }
 
       this.pc++
