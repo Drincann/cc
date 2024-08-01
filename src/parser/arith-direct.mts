@@ -19,17 +19,17 @@ export class Parser {
 
   /*
     <expr> ::= <term> <expr_tail>
-    <expr_tail> ::= + <term> <expr_tail>
-                  | - <term> <expr_tail>
-                  | <empty>
+    <expr_tail> ::= "+" <term> <expr_tail>
+                  | "-" <term> <expr_tail>
+                  | E
 
     <term> ::= <factor> <term_tail>
-    <term_tail> ::= * <factor> <term_tail>
-                  | / <factor> <term_tail>
-                  | <empty>
+    <term_tail> ::= "*" <factor> <term_tail>
+                  | "/" <factor> <term_tail>
+                  | E
 
-    <factor> ::= ( <expr> )
-              | Num
+    <factor> ::= "(" <expr> ")"
+                | <Number>
   */
   public parse(): Instruction[] {
     this.next()
@@ -54,9 +54,9 @@ export class Parser {
   }
 
   /*
-    <expr_tail> ::= + <term> <expr_tail>
-                  | - <term> <expr_tail>
-                  | <empty>
+    <expr_tail> ::= "+" <term> <expr_tail>
+                  | "-" <term> <expr_tail>
+                  | E
   */
   private parseExprTail() {
     if (this.token === undefined) return
@@ -83,9 +83,9 @@ export class Parser {
   }
 
   /*
-    <term_tail> ::= * <factor> <term_tail>
-                  | / <factor> <term_tail>
-                  | <empty>
+    <term_tail> ::= "*" <factor> <term_tail>
+                  | "/" <factor> <term_tail>
+                  | E
   */
   private parseTermTail() {
     if (this.token === undefined) return
@@ -115,8 +115,8 @@ export class Parser {
   }
 
   /*
-    <factor> ::= ( <expr> ) 
-              | Number
+    <factor> ::= "(" <expr> ")"
+                | <Number>
   */
   private parseFactor() {
     ParserError.assert(
