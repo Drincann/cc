@@ -10,6 +10,7 @@ export type Token<TokenTypeGeneric extends TokenType = TokenType> = {
   line: number
   type: TokenTypeGeneric
   value: TokenValueType<TokenTypeGeneric>
+  original: string
 }
 
 type TokenValueType<TokenTypeGeneric extends TokenType> =
@@ -39,7 +40,6 @@ export type TokenType =
   // system calls
   | 'Open' | 'Read' | 'Close' | 'Printf' | 'Malloc' | 'Memset' | 'Memcmp' | 'Exit'
 
-
 type KeyWordsTokenType = 'Return' | 'If' | 'Else' | 'While' | 'Enum' | 'Int' | 'Char' | 'Void' | 'SizeOf'
 
 const keywordsTokenMap: Record<string, KeyWordsTokenType> = {
@@ -50,6 +50,7 @@ const keywordsTokenMap: Record<string, KeyWordsTokenType> = {
 export class Tokenizer {
   private code: string
   private nextPosition: number = 0
+  private tokenScanStart: number = 0
 
   private meta: {
     line: number
@@ -70,6 +71,7 @@ export class Tokenizer {
 
   public next(): Token<any> | undefined {
     let current: string | undefined
+    this.tokenScanStart = this.nextPosition
     while (current = this.code[this.nextPosition]) {
       assert(current.length === 1, "tokenizer.next(): current char should be a single character.")
       this.nextPosition++
@@ -110,13 +112,15 @@ export class Tokenizer {
           return {
             line: this.meta.line,
             type: 'Equal',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         } else {
           return {
             line: this.meta.line,
             type: 'Assign',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         }
       }
@@ -127,13 +131,16 @@ export class Tokenizer {
           return {
             line: this.meta.line,
             type: 'Increment',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
+
           };
         } else {
           return {
             line: this.meta.line,
             type: 'Add',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         }
       }
@@ -144,13 +151,15 @@ export class Tokenizer {
           return {
             line: this.meta.line,
             type: 'Decrement',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         } else {
           return {
             line: this.meta.line,
             type: 'Subtract',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         }
       }
@@ -159,7 +168,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'Multiply',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -167,7 +177,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'Divide',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -175,7 +186,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'Mod',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -185,13 +197,15 @@ export class Tokenizer {
           return {
             line: this.meta.line,
             type: 'NotEqual',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         } else {
           return {
             line: this.meta.line,
             type: 'LogicNot',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           }
         }
       }
@@ -202,20 +216,23 @@ export class Tokenizer {
           return {
             line: this.meta.line,
             type: 'LessThanEqual',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         } else if (this.code[this.nextPosition] === '<') {
           this.nextPosition++;
           return {
             line: this.meta.line,
             type: 'ShiftLeft',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         } else {
           return {
             line: this.meta.line,
             type: 'LessThan',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         }
       }
@@ -226,20 +243,23 @@ export class Tokenizer {
           return {
             line: this.meta.line,
             type: 'GreaterThanEqual',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         } else if (this.code[this.nextPosition] === '>') {
           this.nextPosition++
           return {
             line: this.meta.line,
             type: 'ShiftRight',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         } else {
           return {
             line: this.meta.line,
             type: 'GreaterThan',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         }
       }
@@ -250,13 +270,15 @@ export class Tokenizer {
           return {
             line: this.meta.line,
             type: 'LogicAnd',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         } else {
           return {
             line: this.meta.line,
             type: 'BitwiseAnd',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         }
       }
@@ -267,13 +289,15 @@ export class Tokenizer {
           return {
             line: this.meta.line,
             type: 'LogicOr',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         } else {
           return {
             line: this.meta.line,
             type: 'BitwiseOr',
-            value: undefined
+            value: undefined,
+            original: this.code.substring(this.tokenScanStart, this.nextPosition)
           };
         }
       }
@@ -282,7 +306,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'BitwiseXor',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -290,7 +315,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'BitwiseNot',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -298,7 +324,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'LeftParen',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -306,7 +333,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'RightParen',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -314,7 +342,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'LeftBracket',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -322,7 +351,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'RightBracket',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -330,7 +360,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'LeftBrace',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -338,7 +369,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'RightBrace',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -346,7 +378,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'Conditional',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -354,7 +387,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'Colon',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
 
@@ -362,7 +396,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'Semicolon',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         }
       }
 
@@ -370,7 +405,8 @@ export class Tokenizer {
         return {
           line: this.meta.line,
           type: 'Comma',
-          value: undefined
+          value: undefined,
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         };
       }
     } // end while
@@ -412,7 +448,8 @@ export class Tokenizer {
       return /* new Token */ {
         line: this.meta.line,
         type: 'Number',
-        value: parseDec('0' + value)
+        value: parseDec('0' + value),
+        original: this.code.substring(this.tokenScanStart, this.nextPosition)
       }
     } else if ('0' === this.code[start]) {
       if /* hex */('0x' === this.code.substring(start, start + 2) && isHexDigit(this.code[start + 2])) {
@@ -428,7 +465,8 @@ export class Tokenizer {
         return /* new Token */ {
           line: this.meta.line,
           type: 'Number',
-          value: parseHex(value)
+          value: parseHex(value),
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         }
       } else if /* oct */ ('0' === this.code[start] && isOctDigit(this.code[start + 1])) {
         let end = start + 1
@@ -443,7 +481,8 @@ export class Tokenizer {
         return /* new Token */ {
           line: this.meta.line,
           type: 'Number',
-          value: parseOct(value)
+          value: parseOct(value),
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         }
       } else if /* float */ ('.' === this.code[start + 1] && isDigit(this.code[start + 2])) {
         let end = start + 2
@@ -458,14 +497,16 @@ export class Tokenizer {
         return /* new Token */ {
           line: this.meta.line,
           type: 'Number',
-          value: parseDec(value)
+          value: parseDec(value),
+          original: this.code.substring(this.tokenScanStart, this.nextPosition)
         }
       }
 
       return /* new Token */ {
         line: this.meta.line,
         type: 'Number',
-        value: 0
+        value: 0,
+        original: this.code.substring(this.tokenScanStart, this.nextPosition)
       }
     } else /* dec */ {
       let end = start + 1
@@ -488,7 +529,8 @@ export class Tokenizer {
       return /* new Token */ {
         line: this.meta.line,
         type: 'Number',
-        value: parseDec(value)
+        value: parseDec(value),
+        original: this.code.substring(this.tokenScanStart, this.nextPosition)
       }
     }
   }
@@ -515,7 +557,8 @@ export class Tokenizer {
     return {
       type: 'Comment',
       line: this.meta.line,
-      value: this.code.substring(start + 2, this.nextPosition)
+      value: this.code.substring(start + 2, this.nextPosition),
+      original: this.code.substring(this.tokenScanStart, this.nextPosition)
     }
   }
 
@@ -549,7 +592,8 @@ export class Tokenizer {
     return /* new Token */ {
       type: 'String',
       line: this.meta.line,
-      value: literal
+      value: literal,
+      original: this.code.substring(this.tokenScanStart, this.nextPosition)
     }
   }
 
@@ -572,7 +616,8 @@ export class Tokenizer {
       return /* new Token */ {
         type: 'String',
         line: this.meta.line,
-        value: escape
+        value: escape,
+        original: this.code.substring(this.tokenScanStart, this.nextPosition)
       }
     } else {
       if (this.code[literalStart + 1] !== "'") {
@@ -583,7 +628,8 @@ export class Tokenizer {
       return /* new Token */ {
         type: 'String',
         line: this.meta.line,
-        value: this.code[literalStart]
+        value: this.code[literalStart],
+        original: this.code.substring(this.tokenScanStart, this.nextPosition)
       }
     }
   }
@@ -602,13 +648,15 @@ export class Tokenizer {
       token = {
         type: keywordsTokenMap[name],
         value: undefined,
-        line: this.meta.line
+        line: this.meta.line,
+        original: this.code.substring(this.tokenScanStart, this.nextPosition)
       } as const
     } else {
       token = {
         type: 'Identifier',
         value: name,
-        line: this.meta.line
+        line: this.meta.line,
+        original: this.code.substring(this.tokenScanStart, this.nextPosition)
       } as const
     }
 

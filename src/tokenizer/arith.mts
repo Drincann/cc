@@ -33,6 +33,7 @@ export class Tokenizer {
 
   public next(): Token<TokenType> | undefined {
     let current: string = this.expression[this.cursor]
+    const tokenScanStart = this.cursor
     while (isNotEOF(current)) {
       current = this.expression[this.cursor]
 
@@ -43,38 +44,38 @@ export class Tokenizer {
         return /* new Token */ {
           value: parseDec(literal),
           type: 'Number',
-          original: literal
+          original: this.expression.substring(tokenScanStart, this.cursor)
         }
       }
 
       if (current === '+') {
         this.cursor++
-        return { type: 'Add', value: undefined, original: '+' }
+        return { type: 'Add', value: undefined, original: this.expression.substring(tokenScanStart, this.cursor) }
       }
 
       if (current === '-') {
         this.cursor++
-        return { type: 'Subtract', value: undefined, original: '-' }
+        return { type: 'Subtract', value: undefined, original: this.expression.substring(tokenScanStart, this.cursor) }
       }
 
       if (current === '*') {
         this.cursor++
-        return { type: 'Multiply', value: undefined, original: '*' }
+        return { type: 'Multiply', value: undefined, original: this.expression.substring(tokenScanStart, this.cursor) }
       }
 
       if (current === '/') {
         this.cursor++
-        return { type: 'Divide', value: undefined, original: '/' }
+        return { type: 'Divide', value: undefined, original: this.expression.substring(tokenScanStart, this.cursor) }
       }
 
       if (current === '(') {
         this.cursor++
-        return { type: 'LeftParen', value: undefined, original: '(' }
+        return { type: 'LeftParen', value: undefined, original: this.expression.substring(tokenScanStart, this.cursor) }
       }
 
       if (current === ')') {
         this.cursor++
-        return { type: 'RightParen', value: undefined, original: ')' }
+        return { type: 'RightParen', value: undefined, original: this.expression.substring(tokenScanStart, this.cursor) }
       }
 
       this.cursor++
