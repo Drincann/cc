@@ -1,53 +1,50 @@
 import assert from "assert"
 import { parseDec, parseHex, parseOct, isDigitWithUnderscore, isDigit, isOctDigitWithUnderscore, isOctDigit, isHexDigitWithUnderscore, isHexDigit, isIdentifierStart, isNumberLiteralStart, isIdentifier, isEOF, isStringLiteralStart, getEscape, getCurrentLine, isDoubleQuote, isSingleQuote, isNotEOL, isNotEOF } from "./utils.mjs"
 
-interface Identifier<TokenTypeGeneric extends `${TokenType}`> {
+interface Identifier<TokenTypeGeneric extends TokenType> {
   name: string
   token: Token<TokenTypeGeneric>
 }
 
-type Token<TokenTypeGeneric extends `${TokenType}`> = {
+export type Token<TokenTypeGeneric extends TokenType = TokenType> = {
   line: number
   type: TokenTypeGeneric
   value: TokenValueType<TokenTypeGeneric>
 }
 
-type TokenValueType<TokenTypeGeneric extends `${TokenType}`> =
+type TokenValueType<TokenTypeGeneric extends TokenType> =
   /*                             TokenType => ValueType */
-  TokenTypeGeneric extends `${TokenType.Identifier}` ? string :
-  TokenTypeGeneric extends `${TokenType.Number}` ? number :
-  TokenTypeGeneric extends `${TokenType.String}` ? string :
-  TokenTypeGeneric extends `${TokenType.Comment}` ? string :
+  TokenTypeGeneric extends 'Identifier' ? string :
+  TokenTypeGeneric extends 'Number' ? number :
+  TokenTypeGeneric extends 'String' ? string :
+  TokenTypeGeneric extends 'Comment' ? string :
   undefined
 
-export enum TokenType {
-  Identifier = 'Identifier', Number = 'Number', String = 'String', Comment = 'Comment', Assign = 'Assign',
-  Increment = 'Increment', Decrement = 'Decrement', Add = 'Add', Subtract = 'Subtract', Multiply = 'Multiply', Divide = 'Divide', Mod = 'Mod',
-  Equal = 'Equal', NotEqual = 'NotEqual', LessThan = 'LessThan', LessThanEqual = 'LessThanEqual', GreaterThan = 'GreaterThan', GreaterThanEqual = 'GreaterThanEqual',
-  ShiftLeft = 'ShiftLeft', ShiftRight = 'ShiftRight',
-  LogicOr = 'LogicOr', LogicAnd = 'LogicAnd', LogicNot = 'LogicNot', BitwiseOr = 'BitwiseOr', BitwiseAnd = 'BitwiseAnd', BitwiseNot = 'BitwiseNot', BitwiseXor = 'BitwiseXor',
-  LeftParen = 'LeftParen', RightParen = 'RightParen',
-  LeftBracket = 'LeftBracket', RightBracket = 'RightBracket',
-  LeftBrace = 'LeftBrace', RightBrace = 'RightBrace',
-  Conditional = 'Conditional',
-  Colon = 'Colon',
-  Semicolon = 'Semicolon',
-  Comma = 'Comma',
-
+export type TokenType =
+  | 'Identifier' | 'Number' | 'String' | 'Comment' | 'Assign'
+  | 'Increment' | 'Decrement' | 'Add' | 'Subtract' | 'Multiply' | 'Divide' | 'Mod'
+  | 'Equal' | 'NotEqual' | 'LessThan' | 'LessThanEqual' | 'GreaterThan' | 'GreaterThanEqual'
+  | 'ShiftLeft' | 'ShiftRight'
+  | 'LogicOr' | 'LogicAnd' | 'LogicNot' | 'BitwiseOr' | 'BitwiseAnd' | 'BitwiseNot' | 'BitwiseXor'
+  | 'LeftParen' | 'RightParen'
+  | 'LeftBracket' | 'RightBracket'
+  | 'LeftBrace' | 'RightBrace'
+  | 'Conditional'
+  | 'Colon'
+  | 'Semicolon'
+  | 'Comma'
   // keywords
-  Return = 'Return', If = 'If', Else = 'Else', While = 'While', Enum = 'Enum',
-  Int = 'Int', Char = 'Char', Void = 'Void', SizeOf = 'SizeOf',
-
+  | 'Return' | 'If' | 'Else' | 'While' | 'Enum'
+  | 'Int' | 'Char' | 'Void' | 'SizeOf'
   // system calls
-  Open = 'Open', Read = 'Read', Close = 'Close', Printf = 'Printf', Malloc = 'Malloc', Memset = 'Memset', Memcmp = 'Memcmp', Exit = 'Exit',
-}
+  | 'Open' | 'Read' | 'Close' | 'Printf' | 'Malloc' | 'Memset' | 'Memcmp' | 'Exit'
 
-type KeyWordsTokenType = TokenType.Return | TokenType.If | TokenType.Else | TokenType.While | TokenType.Enum
-  | TokenType.Int | TokenType.Char | TokenType.Void | TokenType.SizeOf
+
+type KeyWordsTokenType = 'Return' | 'If' | 'Else' | 'While' | 'Enum' | 'Int' | 'Char' | 'Void' | 'SizeOf'
 
 const keywordsTokenMap: Record<string, KeyWordsTokenType> = {
-  'return': TokenType.Return, 'if': TokenType.If, 'else': TokenType.Else, 'while': TokenType.While, 'enum': TokenType.Enum,
-  'int': TokenType.Int, 'char': TokenType.Char, 'void': TokenType.Void, 'sizeof': TokenType.SizeOf
+  'return': 'Return', 'if': 'If', 'else': 'Else', 'while': 'While', 'enum': 'Enum',
+  'int': 'Int', 'char': 'Char', 'void': 'Void', 'sizeof': 'SizeOf'
 }
 
 export class Tokenizer {
@@ -56,7 +53,7 @@ export class Tokenizer {
 
   private meta: {
     line: number
-    symbols: (Identifier<TokenType.Identifier | KeyWordsTokenType>)[]
+    symbols: (Identifier<'Identifier' | KeyWordsTokenType>)[]
   } =
     {
       line: 1,
@@ -112,13 +109,13 @@ export class Tokenizer {
           this.nextPosition++;
           return {
             line: this.meta.line,
-            type: TokenType.Equal,
+            type: 'Equal',
             value: undefined
           };
         } else {
           return {
             line: this.meta.line,
-            type: TokenType.Assign,
+            type: 'Assign',
             value: undefined
           };
         }
@@ -129,13 +126,13 @@ export class Tokenizer {
           this.nextPosition++;
           return {
             line: this.meta.line,
-            type: TokenType.Increment,
+            type: 'Increment',
             value: undefined
           };
         } else {
           return {
             line: this.meta.line,
-            type: TokenType.Add,
+            type: 'Add',
             value: undefined
           };
         }
@@ -146,13 +143,13 @@ export class Tokenizer {
           this.nextPosition++;
           return {
             line: this.meta.line,
-            type: TokenType.Decrement,
+            type: 'Decrement',
             value: undefined
           };
         } else {
           return {
             line: this.meta.line,
-            type: TokenType.Subtract,
+            type: 'Subtract',
             value: undefined
           };
         }
@@ -161,7 +158,7 @@ export class Tokenizer {
       if (current === '*') {
         return {
           line: this.meta.line,
-          type: TokenType.Multiply,
+          type: 'Multiply',
           value: undefined
         };
       }
@@ -169,7 +166,7 @@ export class Tokenizer {
       if (current === '/') {
         return {
           line: this.meta.line,
-          type: TokenType.Divide,
+          type: 'Divide',
           value: undefined
         };
       }
@@ -177,7 +174,7 @@ export class Tokenizer {
       if (current === '%') {
         return {
           line: this.meta.line,
-          type: TokenType.Mod,
+          type: 'Mod',
           value: undefined
         };
       }
@@ -187,13 +184,13 @@ export class Tokenizer {
           this.nextPosition++;
           return {
             line: this.meta.line,
-            type: TokenType.NotEqual,
+            type: 'NotEqual',
             value: undefined
           };
         } else {
           return {
             line: this.meta.line,
-            type: TokenType.LogicNot,
+            type: 'LogicNot',
             value: undefined
           }
         }
@@ -204,20 +201,20 @@ export class Tokenizer {
           this.nextPosition++;
           return {
             line: this.meta.line,
-            type: TokenType.LessThanEqual,
+            type: 'LessThanEqual',
             value: undefined
           };
         } else if (this.code[this.nextPosition] === '<') {
           this.nextPosition++;
           return {
             line: this.meta.line,
-            type: TokenType.ShiftLeft,
+            type: 'ShiftLeft',
             value: undefined
           };
         } else {
           return {
             line: this.meta.line,
-            type: TokenType.LessThan,
+            type: 'LessThan',
             value: undefined
           };
         }
@@ -228,20 +225,20 @@ export class Tokenizer {
           this.nextPosition++
           return {
             line: this.meta.line,
-            type: TokenType.GreaterThanEqual,
+            type: 'GreaterThanEqual',
             value: undefined
           };
         } else if (this.code[this.nextPosition] === '>') {
           this.nextPosition++
           return {
             line: this.meta.line,
-            type: TokenType.ShiftRight,
+            type: 'ShiftRight',
             value: undefined
           };
         } else {
           return {
             line: this.meta.line,
-            type: TokenType.GreaterThan,
+            type: 'GreaterThan',
             value: undefined
           };
         }
@@ -252,13 +249,13 @@ export class Tokenizer {
           this.nextPosition++
           return {
             line: this.meta.line,
-            type: TokenType.LogicAnd,
+            type: 'LogicAnd',
             value: undefined
           };
         } else {
           return {
             line: this.meta.line,
-            type: TokenType.BitwiseAnd,
+            type: 'BitwiseAnd',
             value: undefined
           };
         }
@@ -269,13 +266,13 @@ export class Tokenizer {
           this.nextPosition++
           return {
             line: this.meta.line,
-            type: TokenType.LogicOr,
+            type: 'LogicOr',
             value: undefined
           };
         } else {
           return {
             line: this.meta.line,
-            type: TokenType.BitwiseOr,
+            type: 'BitwiseOr',
             value: undefined
           };
         }
@@ -284,7 +281,7 @@ export class Tokenizer {
       if (current === '^') {
         return {
           line: this.meta.line,
-          type: TokenType.BitwiseXor,
+          type: 'BitwiseXor',
           value: undefined
         };
       }
@@ -292,7 +289,7 @@ export class Tokenizer {
       if (current === '~') {
         return {
           line: this.meta.line,
-          type: TokenType.BitwiseNot,
+          type: 'BitwiseNot',
           value: undefined
         };
       }
@@ -300,7 +297,7 @@ export class Tokenizer {
       if (current === '(') {
         return {
           line: this.meta.line,
-          type: TokenType.LeftParen,
+          type: 'LeftParen',
           value: undefined
         };
       }
@@ -308,7 +305,7 @@ export class Tokenizer {
       if (current === ')') {
         return {
           line: this.meta.line,
-          type: TokenType.RightParen,
+          type: 'RightParen',
           value: undefined
         };
       }
@@ -316,7 +313,7 @@ export class Tokenizer {
       if (current === '[') {
         return {
           line: this.meta.line,
-          type: TokenType.LeftBracket,
+          type: 'LeftBracket',
           value: undefined
         };
       }
@@ -324,7 +321,7 @@ export class Tokenizer {
       if (current === ']') {
         return {
           line: this.meta.line,
-          type: TokenType.RightBracket,
+          type: 'RightBracket',
           value: undefined
         };
       }
@@ -332,7 +329,7 @@ export class Tokenizer {
       if (current === '{') {
         return {
           line: this.meta.line,
-          type: TokenType.LeftBrace,
+          type: 'LeftBrace',
           value: undefined
         };
       }
@@ -340,7 +337,7 @@ export class Tokenizer {
       if (current === '}') {
         return {
           line: this.meta.line,
-          type: TokenType.RightBrace,
+          type: 'RightBrace',
           value: undefined
         };
       }
@@ -348,7 +345,7 @@ export class Tokenizer {
       if (current === '?') {
         return {
           line: this.meta.line,
-          type: TokenType.Conditional,
+          type: 'Conditional',
           value: undefined
         };
       }
@@ -356,7 +353,7 @@ export class Tokenizer {
       if (current === ':') {
         return {
           line: this.meta.line,
-          type: TokenType.Colon,
+          type: 'Colon',
           value: undefined
         };
       }
@@ -364,7 +361,7 @@ export class Tokenizer {
       if (current === ';') {
         return {
           line: this.meta.line,
-          type: TokenType.Semicolon,
+          type: 'Semicolon',
           value: undefined
         }
       }
@@ -372,7 +369,7 @@ export class Tokenizer {
       if (current === ',') {
         return {
           line: this.meta.line,
-          type: TokenType.Comma,
+          type: 'Comma',
           value: undefined
         };
       }
@@ -384,7 +381,7 @@ export class Tokenizer {
     this.until(new Set(['\n', '\0']))
   }
 
-  private parseNextIdentifier(): Token<TokenType.Identifier | KeyWordsTokenType> | undefined {
+  private parseNextIdentifier(): Token<'Identifier' | KeyWordsTokenType> | undefined {
     const start = this.nextPosition - 1
 
     let end = this.nextPosition
@@ -399,7 +396,7 @@ export class Tokenizer {
     return this.insertSymbol(name)
   }
 
-  private parseNextNumberLiteral(): Token<TokenType.Number> | undefined {
+  private parseNextNumberLiteral(): Token<'Number'> | undefined {
     const start = this.nextPosition - 1
 
     if /* float */('.' === this.code[start] && isDigit(this.code[start + 1])) {
@@ -414,7 +411,7 @@ export class Tokenizer {
       const value = this.code.substring(start, end).replace(/_/g, '')
       return /* new Token */ {
         line: this.meta.line,
-        type: TokenType.Number,
+        type: 'Number',
         value: parseDec('0' + value)
       }
     } else if ('0' === this.code[start]) {
@@ -430,7 +427,7 @@ export class Tokenizer {
         const value = this.code.substring(start, end).replace(/_/g, '')
         return /* new Token */ {
           line: this.meta.line,
-          type: TokenType.Number,
+          type: 'Number',
           value: parseHex(value)
         }
       } else if /* oct */ ('0' === this.code[start] && isOctDigit(this.code[start + 1])) {
@@ -445,7 +442,7 @@ export class Tokenizer {
         const value = this.code.substring(start, end).replace(/_/g, '')
         return /* new Token */ {
           line: this.meta.line,
-          type: TokenType.Number,
+          type: 'Number',
           value: parseOct(value)
         }
       } else if /* float */ ('.' === this.code[start + 1] && isDigit(this.code[start + 2])) {
@@ -460,14 +457,14 @@ export class Tokenizer {
         const value = this.code.substring(start, end).replace(/_/g, '')
         return /* new Token */ {
           line: this.meta.line,
-          type: TokenType.Number,
+          type: 'Number',
           value: parseDec(value)
         }
       }
 
       return /* new Token */ {
         line: this.meta.line,
-        type: TokenType.Number,
+        type: 'Number',
         value: 0
       }
     } else /* dec */ {
@@ -490,13 +487,13 @@ export class Tokenizer {
       const value = this.code.substring(start, end).replace(/_/g, '')
       return /* new Token */ {
         line: this.meta.line,
-        type: TokenType.Number,
+        type: 'Number',
         value: parseDec(value)
       }
     }
   }
 
-  private parseNextStringLiteral(): Token<TokenType.String> | undefined {
+  private parseNextStringLiteral(): Token<'String'> | undefined {
     const start = this.nextPosition - 1
     if (isDoubleQuote(this.code[start])) {
       return this.parseDoubleQuoteStringLiteral(start)
@@ -511,12 +508,12 @@ export class Tokenizer {
     return char === '/' && this.code[this.nextPosition] === '/'
   }
 
-  private parseNextComment(): Token<TokenType.Comment> | undefined {
+  private parseNextComment(): Token<'Comment'> | undefined {
     const start = this.nextPosition - 1
     this.until(new Set(['\n', '\0']))
 
     return {
-      type: TokenType.Comment,
+      type: 'Comment',
       line: this.meta.line,
       value: this.code.substring(start + 2, this.nextPosition)
     }
@@ -525,7 +522,7 @@ export class Tokenizer {
   /**
    * @param start the position of the first double quote
    */
-  private parseDoubleQuoteStringLiteral(start: number): Token<TokenType.String> {
+  private parseDoubleQuoteStringLiteral(start: number): Token<'String'> {
     let cursor = start + 1
     let current = this.code[cursor]
     let literal = ''
@@ -550,7 +547,7 @@ export class Tokenizer {
 
     this.nextPosition = cursor + 1
     return /* new Token */ {
-      type: TokenType.String,
+      type: 'String',
       line: this.meta.line,
       value: literal
     }
@@ -559,7 +556,7 @@ export class Tokenizer {
   /**
    * @param start the position of the first single quote
    */
-  private parseSingleQuoteStringLiteral(start: number): Token<TokenType.String> {
+  private parseSingleQuoteStringLiteral(start: number): Token<'String'> {
     let literalStart = start + 1
     if (this.code[literalStart] === '\\') {
       if (this.code[literalStart + 2] !== "'") {
@@ -573,7 +570,7 @@ export class Tokenizer {
 
       this.nextPosition = literalStart + 3
       return /* new Token */ {
-        type: TokenType.String,
+        type: 'String',
         line: this.meta.line,
         value: escape
       }
@@ -584,7 +581,7 @@ export class Tokenizer {
 
       this.next
       return /* new Token */ {
-        type: TokenType.String,
+        type: 'String',
         line: this.meta.line,
         value: this.code[literalStart]
       }
@@ -599,7 +596,7 @@ export class Tokenizer {
     }
   }
 
-  private insertSymbol(name: string): Token<TokenType.Identifier | KeyWordsTokenType> {
+  private insertSymbol(name: string): Token<'Identifier' | KeyWordsTokenType> {
     let token
     if (keywordsTokenMap[name] !== undefined) {
       token = {
@@ -609,7 +606,7 @@ export class Tokenizer {
       } as const
     } else {
       token = {
-        type: TokenType.Identifier,
+        type: 'Identifier',
         value: name,
         line: this.meta.line
       } as const
