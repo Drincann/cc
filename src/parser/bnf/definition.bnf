@@ -1,0 +1,20 @@
+<definition> ::= <intDefinition> | <stringDefinition>
+<intDefinition> ::= "int" <inlineBlank> <symbol> <inlineBlank>? <intInitialAssign>? ";"
+<stringDefinition> ::= "string" <inlineBlank> <symbol> <inlineBlank>? <stringInitialAssign>? ";"
+
+<inlineBlank> ::= (" " | "\t")+
+
+<symbol> ::= <symbolStart>+ <symbolRest>*
+<symbolStart> ::= ("_" | [a-z] | [A-Z])
+<symbolRest> ::= ("_" | [a-z] | [A-Z] | [0-9])
+
+<intInitialAssign> ::= "=" <integer>
+<stringInitialAssign> ::= "=" <string>
+
+# tokens
+# <string> ::= "\"" <stringContent> "\""
+# <stringContent> ::= ([a-z] | [A-Z])* | E
+
+# <integer> ::= <positiveInteger> | <negativeInteger>
+# <positiveInteger> ::= ("0" |  [1-9] [0-9]*)
+# <negativeInteger> ::= "-" <positiveInteger>
