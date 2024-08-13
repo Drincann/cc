@@ -102,7 +102,11 @@ export function isStringLiteralStart(current: string): boolean {
   return current === '"' || current === "'"
 }
 
-export function getCurrentLine(code: string, cursor: number): string | undefined {
+export function getCurrentLine(code: string, cursor?: number): string | undefined {
+  if (cursor === undefined) {
+    cursor = code.length - 1
+  }
+
   let current = code[cursor]
   if (current === undefined) {
     return undefined

@@ -1,6 +1,6 @@
 import { describe, it } from "node:test"
 import assert from 'assert/strict'
-import { ClangTokenizer } from "../src/tokenizer/index.mjs"
+import { ClangToken, ClangTokenizer } from "../src/tokenizer/index.mjs"
 
 describe("ClangTokenizer", () => {
   describe("#next()", () => {
@@ -709,7 +709,46 @@ describe("ClangTokenizer", () => {
         }
       )
 
+      it(
+        "if statement",
+        () => {
+          const tokenizer = ClangTokenizer.fromCode("if(boolExp){exp;}else if(boolExp){exp;}else{exp;}")
+          assert.deepEqual(
+            iterate(tokenizer.next.bind(tokenizer)),
+            [
+              { type: 'If', value: undefined, },
+              { type: 'LeftParen', value: undefined, },
+              { type: 'Identifier', value: 'boolExp', },
+              { type: 'RightParen', value: undefined, },
+
+              { type: 'LeftBrace', value: undefined, },
+              { type: 'Identifier', value: 'exp', },
+              { type: 'Semicolon', value: undefined, },
+              { type: 'RightBrace', value: undefined, },
+
+              { type: 'Else', value: undefined, },
+              { type: 'If', value: undefined, },
+              { type: 'LeftParen', value: undefined, },
+              { type: 'Identifier', value: 'boolExp', },
+              { type: 'RightParen', value: undefined, },
+
+              { type: 'LeftBrace', value: undefined, },
+              { type: 'Identifier', value: 'exp', },
+              { type: 'Semicolon', value: undefined, },
+              { type: 'RightBrace', value: undefined, },
+
+              { type: 'Else', value: undefined, },
+              { type: 'LeftBrace', value: undefined, },
+              { type: 'Identifier', value: 'exp', },
+              { type: 'Semicolon', value: undefined, },
+              { type: 'RightBrace', value: undefined, },
+            ] satisfies Partial<ClangToken>[],
+          )
+        }
+      )
+
     }) // suite use cases
+
   }) // suite next
 }) // suite ClangTokenizer
 
@@ -723,4 +762,12 @@ function pick(obj: Record<string, any> | undefined, keys: string[]) {
     acc[key] = obj[key]
     return acc
   }, {} as Record<string, any>)
+}
+
+function iterate(next: () => ClangToken | undefined): ClangToken[] {
+  const arr: ClangToken[] = []
+  let value: ClangToken | undefined;
+  // @ts-ignorek
+  while ((value = next()) !== undefined) arr.push(pick(value, ['type', 'value']))
+  return arr
 }

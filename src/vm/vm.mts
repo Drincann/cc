@@ -27,18 +27,22 @@ export class Instruction<Type extends InstructionType = InstructionType> {
     return this.type + ' ' + this.args.join(' ')
   }
 }
+
 export class VirtualMachine {
   private text: Instruction[] = []
-  private stack: number[]
+  private stack: Uint8Array
 
   // registers
-  private pc = 0
   private ax = 0
+  private bx = 0
+  private cx = 0
+  private dx = 0
+  private pc = 0
   private bp = 0
   private sp = 0
 
   public constructor(size: number) {
-    this.stack = Array.from<number>({ length: size }).fill(0)
+    this.stack = new Uint8Array(size)
   }
 
   public program(instructions: Instruction[]): VirtualMachine {
@@ -68,7 +72,7 @@ export class VirtualMachine {
     }
   } {
     return {
-      stack: shallowCopy(this.stack),
+      stack: shallowCopy(Array.from(this.stack)),
       registers: {
         pc: this.pc,
         ax: this.ax,

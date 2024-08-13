@@ -1,5 +1,5 @@
 export class ParserError extends Error {
-  private constructor(message: string) {
+  public constructor(message: string) {
     super(message)
   }
 
@@ -7,5 +7,9 @@ export class ParserError extends Error {
     if (!condition) {
       throw new ParserError(message)
     }
+  }
+
+  public static fail(message: string) {
+    throw new ParserError(message)
   }
 }
