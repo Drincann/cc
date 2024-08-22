@@ -1,4 +1,4 @@
-import { ClangTokenType } from "../../tokenizer/index.mjs"
+import { ClangToken, ClangTokenType } from "../../tokenizer/index.mjs"
 
 export type DataType = Pointer | Primitive
 export interface Pointer {
@@ -26,6 +26,12 @@ export type ASTNode =
   | Program
   | FunctionDefinition
   | VariableDefinition
+  | Parameter
+  | FunctionBody
+  | Statement
+  | Expression
+  | Identifier
+  | IdentifierDefinition
 
 export interface Program {
   type: 'program'
@@ -38,14 +44,14 @@ export interface Program {
 
 export interface Parameter {
   type: "parameter"
-  parent?: FunctionDefinition
+  parent?: ASTNode
   name: string
   varType: DataType
 }
 
 export interface FunctionDefinition {
   type: 'function'
-  parent?: Program
+  parent?: ASTNode
   name: string
   returnType: DataType
   parameters: Parameter[]
@@ -54,7 +60,7 @@ export interface FunctionDefinition {
 
 export interface FunctionBody {
   type: 'function-body'
-  parent?: FunctionDefinition
+  parent?: ASTNode
   statements: Statement[]
 }
 
@@ -62,7 +68,7 @@ export type Statement = VariableDefinition | IfStatement | ReturnStatement // | 
 
 export interface VariableDefinition {
   type: 'variable'
-  parent?: Program
+  parent?: ASTNode
   name: string
   varType: DataType
   expression?: Expression
@@ -70,7 +76,7 @@ export interface VariableDefinition {
 
 export interface IfStatement {
   type: 'if'
-  parent?: FunctionBody
+  parent?: ASTNode
   condition: Expression
   then: Statement[]
   else?: Statement[]
@@ -79,15 +85,63 @@ export interface IfStatement {
 
 export interface ReturnStatement {
   type: 'return'
+  parent?: ASTNode
   expression: Expression
 }
 
-export type Expression = {
-  type: 'expression'
+export type Expression = BinaryExpression | UnaryExpression
+
+export type UnaryExpression = StringLiteral | NumberLiteral | Identifier | FunctionCall | Dereference | AddressOf
+
+export interface BinaryExpression {
+  type: 'binary-expression'
+  parent?: ASTNode
+  operator: BinaryOperatorToken
+  left: Expression
+  right: Expression
 }
 
-export type Identifier = FunctionDefinition | VariableDefinition | Parameter
+export type BinaryOperatorToken = ClangToken<'Add' | 'Subtract' | 'Multiply' | 'Divide' | 'Assign' | 'Equal'>
 
+export type StringLiteral = {
+  type: 'string-literal'
+  parent?: ASTNode
+  value: string
+}
+
+export type NumberLiteral = {
+  type: 'number-literal'
+  parent?: ASTNode
+  value: number
+}
+
+export type IdentifierDefinition = FunctionDefinition | VariableDefinition | Parameter
+
+export interface Identifier {
+  type: 'identifier'
+  parent?: ASTNode
+  reference: IdentifierDefinition
+}
+
+export type FunctionCall = {
+  type: 'function-call'
+  parent?: ASTNode
+  function: FunctionDefinition
+  arguments: Expression[]
+}
+
+
+export type Dereference = {
+  type: 'dereference'
+  parent?: ASTNode
+  expression: Expression
+}
+
+export type AddressOf = {
+  type: 'address-of'
+  parent?: ASTNode
+  expression: Expression
+}
 
 export const isVarDataType = (type?: ClangTokenType): boolean => {
   return type === 'Int' || type === 'Char' || type === 'Float'

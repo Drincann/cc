@@ -1,12 +1,12 @@
 import { ClangToken, ClangTokenizer, ClangTokenType } from '../tokenizer/index.mjs'
 import { getCurrentLine } from '../tokenizer/utils.mjs'
 import { ParserError } from './error.mjs'
-import { tokenType2Primitive, DataType, isVarDataType, Identifier, ASTNode, FunctionDefinition, VariableDefinition, Program, FunctionBody, Expression, Statement, IfStatement, ReturnStatement, Parameter } from './types/syntax.mjs'
+import { tokenType2Primitive, DataType, isVarDataType, Identifier, ASTNode, FunctionDefinition, VariableDefinition, Program, FunctionBody, Expression, Statement, IfStatement, ReturnStatement, Parameter, StringLiteral, AddressOf, Dereference, UnaryExpression, NumberLiteral, BinaryOperatorToken, IdentifierDefinition } from './types/syntax.mjs'
 import { ScopedMap } from './utils/scoped-map.mjs'
 
 export class Parser {
   private tokenizer: ClangTokenizer
-  private symbolTable: ScopedMap<string, Identifier> = new ScopedMap(new Map())
+  private symbolTable: ScopedMap<string, IdentifierDefinition> = new ScopedMap(new Map())
 
   private codeParsed: string = ''
 
@@ -43,8 +43,47 @@ export class Parser {
       node.parameters.forEach(parameter => {
         parameter.parent = node
       })
+    } else if (node.type === 'function-body') {
+      node.statements.forEach(statement => {
+        statement.parent = node
+        this.connectParentRecursive(statement)
+      })
+    } else if (node.type === 'variable') {
+      if (node.expression) {
+        node.expression.parent = node
+        this.connectParentRecursive(node.expression)
+      }
+    } else if (node.type === 'address-of') {
+      node.expression.parent = node
+      this.connectParentRecursive(node.expression)
+    } else if (node.type === 'dereference') {
+      node.expression.parent = node
+      this.connectParentRecursive(node.expression)
+    } else if (node.type === 'binary-expression') {
+      node.left.parent = node
+      node.right.parent = node
+      this.connectParentRecursive(node.left)
+      this.connectParentRecursive(node.right)
+    } else if (node.type === 'function-call') {
+      node.arguments.forEach(argument => {
+        argument.parent = node
+        this.connectParentRecursive(argument)
+      })
+    } else if (node.type === 'if') {
+      node.condition.parent = node
+      this.connectParentRecursive(node.condition)
+      node.then.forEach(statement => {
+        statement.parent = node
+        this.connectParentRecursive(statement)
+      })
+      node.else?.forEach(statement => {
+        statement.parent = node
+        this.connectParentRecursive(statement)
+      })
+    } else if (node.type === 'return') {
+      node.expression.parent = node
+      this.connectParentRecursive(node.expression)
     }
-
     return node
   }
 
@@ -103,7 +142,7 @@ export class Parser {
     }
 
     this.match('LeftParen')
-    this.symbolTable.enterSubScope()
+    this.symbolTable = this.symbolTable.getSubScope()
     const parameters = this.parseFunctionParameterList()
     this.match('RightParen')
 
@@ -186,8 +225,119 @@ export class Parser {
     }
   }
 
-  private parseExpression(): Expression {
+  private parseExpression(priority: number = 0): Expression {
+    let left: Expression | undefined = this.tryParseUnary()
+    if (left === undefined) {
+    }
+
+    if (left === undefined) {
+      throw new ParserError('Unexpected token: ' + this.currentToken?.type + ' near line ' + this.currentToken?.line + ': \'' + getCurrentLine(this.codeParsed) + '\'')
+    }
+
+    while (this.isBinaryOperator(this.currentToken) && this.getPriority(this.currentToken.type) > priority) {
+      const operator = this.currentToken
+      this.next()
+      left = {
+        type: 'binary-expression',
+        left,
+        operator,
+        right: this.parseExpression(this.getPriority(operator.type))
+      }
+    }
+
+    return left as Expression
+  }
+
+  private isBinaryOperator(token: ClangToken | undefined): token is BinaryOperatorToken {
+    return token?.type === 'Add' || token?.type === 'Subtract' || token?.type === 'Multiply' || token?.type === 'Divide' || token?.type === 'Assign' || token?.type === 'Equal'
+  }
+
+  private tryParseUnary(): Expression | undefined {
+    if (this.currentToken?.type === 'String') {
+      const value = this.currentToken.value as string
+      this.match('String')
+      return {
+        type: 'string-literal',
+        value
+      }
+    } else if (this.currentToken?.type === 'Number') {
+      const value = this.currentToken.value as number
+      this.match('Number')
+      return {
+        type: 'number-literal',
+        value
+      }
+    } else if (this.currentToken?.type === 'Identifier') {
+      const identifier = this.symbolTable.get(this.currentToken.value as string)
+      if (identifier === undefined) {
+        throw new ParserError('Undefined identifier: ' + this.currentToken.value + ' near line ' + this.currentToken.line + ': \'' + getCurrentLine(this.codeParsed) + '\'')
+      }
+
+      this.match('Identifier')
+      return {
+        type: 'identifier',
+        reference: identifier,
+      }
+    } else if (this.currentToken?.type === 'LeftParen') {
+      this.match('LeftParen')
+      const expression = this.parseExpression()
+      this.match('RightParen')
+      return expression
+    }
+  }
+  private getPriority(type: BinaryOperatorToken['type'] | undefined): number {
+    if (type === undefined) {
+      throw new ParserError(`Invalid binary operator: ${type}`)
+    }
+
+    return {
+      'Add': 2,
+      'Subtract': 2,
+      'Multiply': 3,
+      'Divide': 4,
+      'Assign': 0,
+      'Equal': 1,
+    }[type]
+  }
+
+  private tryParseCast() {
     throw new Error('Method not implemented.')
+  }
+
+  private tryParseAddressOf(): AddressOf | undefined {
+    return undefined
+  }
+
+  private tryParseDereference(): Dereference | undefined {
+    return undefined
+  }
+
+  private tryParseIdentifierOrFunctionCall() {
+    return undefined
+  }
+
+  private tryParseNumberLiteral(): NumberLiteral | undefined {
+    if (this.currentToken?.type === 'Number') {
+      this.match('Number')
+      return {
+        type: 'number-literal',
+        value: this.currentToken.value as number
+      }
+    }
+
+    return undefined
+  }
+
+  private tryParseStringLiteral(): StringLiteral | undefined {
+    if (this.currentToken?.type === 'String') {
+      this.match('String')
+      return {
+        type: 'string-literal',
+        value: this.currentToken.value as string
+      }
+    }
+
+    return undefined
   }
 
   private parseFunctionBody(): FunctionBody {
@@ -251,9 +401,9 @@ export class Parser {
       return variable
     }
 
-    if (this.currentToken?.type === 'Equal') {
+    if (this.currentToken?.type === 'Assign') {
       // Variable definition
-      this.match('Equal')
+      this.match('Assign')
       const value = this.parseExpression()
       this.match('Semicolon')
 
@@ -320,7 +470,13 @@ export class Parser {
   }
 
   private parseReturnStatement(): ReturnStatement {
-    throw new Error('Method not implemented.')
+    this.match('Return')
+    const returnValue = this.parseExpression()
+    this.match('Semicolon')
+    return {
+      type: 'return',
+      expression: returnValue
+    }
   }
 
   private parseFunctionParameterList(): Parameter[] {
@@ -377,13 +533,13 @@ export class Parser {
       type != undefined,
       'Expected type, but got: ' + this.currentToken?.value + ' near line ' + this.currentToken?.line + ': \'' + getCurrentLine(this.codeParsed) + '\''
     )
+    this.next()
 
     while (this.currentToken?.type === 'Multiply') {
       type = { dereferenced: type }
       this.next()
     }
 
-    this.next()
     return type!
   }
 
