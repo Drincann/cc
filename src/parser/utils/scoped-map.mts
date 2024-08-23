@@ -6,7 +6,7 @@ export class ScopedMap<K, V> extends Map<K, V> {
     }
   }
 
-  getSubScope(): ScopedMap<K, V> {
+  createSubScope(): ScopedMap<K, V> {
     return new ScopedMap(this)
   }
 

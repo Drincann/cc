@@ -112,7 +112,7 @@ export class Parser {
 
   private parseFunctionOrVariable(): FunctionDefinition | VariableDefinition | FunctionDeclaration | VariableDeclaration {
     const globalScope = this.symbolTable;
-    const functionScope = this.symbolTable.getSubScope()
+    const functionScope = this.symbolTable.createSubScope()
 
     const dataType = this.parseDataType()
     const identifierToken = this.parseNextIdentifier()
