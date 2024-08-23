@@ -31,7 +31,7 @@ export type ASTNode =
   | Statement
   | Expression
   | Identifier
-  | IdentifierDefinition
+  | IdentifierDeclaration
 
 export interface Program {
   type: 'program'
@@ -39,6 +39,8 @@ export interface Program {
   definitions: (
     | FunctionDefinition
     | VariableDefinition
+    | FunctionDeclaration
+    | VariableDeclaration
   )[]
 }
 
@@ -50,12 +52,22 @@ export interface Parameter {
 }
 
 export interface FunctionDefinition {
-  type: 'function'
+  type: 'function-definition'
   parent?: ASTNode
   name: string
   returnType: DataType
   parameters: Parameter[]
   body?: FunctionBody
+  declaration?: FunctionDeclaration
+}
+
+export interface FunctionDeclaration {
+  type: 'function-declaration'
+  parent?: ASTNode
+  name: string
+  returnType: DataType
+  parameters: Parameter[]
+  definition?: FunctionDefinition
 }
 
 export interface FunctionBody {
@@ -67,11 +79,20 @@ export interface FunctionBody {
 export type Statement = VariableDefinition | IfStatement | ReturnStatement // |  WhileStatement | ForStatement
 
 export interface VariableDefinition {
-  type: 'variable'
+  type: 'variable-definition'
   parent?: ASTNode
   name: string
   varType: DataType
   expression?: Expression
+  declaration?: VariableDeclaration
+}
+
+export interface VariableDeclaration {
+  type: 'variable-declaration'
+  parent?: ASTNode
+  name: string
+  varType: DataType
+  declaration?: VariableDefinition
 }
 
 export interface IfStatement {
@@ -115,18 +136,18 @@ export type NumberLiteral = {
   value: number
 }
 
-export type IdentifierDefinition = FunctionDefinition | VariableDefinition | Parameter
+export type IdentifierDeclaration = FunctionDefinition | VariableDefinition | FunctionDeclaration | VariableDeclaration | Parameter
 
 export interface Identifier {
   type: 'identifier'
   parent?: ASTNode
-  reference: IdentifierDefinition
+  reference: IdentifierDeclaration
 }
 
 export type FunctionCall = {
   type: 'function-call'
   parent?: ASTNode
-  function: FunctionDefinition
+  function: FunctionDefinition | FunctionDeclaration
   arguments: Expression[]
 }
 

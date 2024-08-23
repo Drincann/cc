@@ -1,3 +1,4 @@
+import util from 'util'
 import { describe, it } from "node:test"
 import assert from 'assert/strict'
 import { ClangToken } from "../src/tokenizer/index.mjs"
@@ -18,7 +19,7 @@ describe("ClangParser", () => {
         const defs = root.definitions
         assert.equal(defs.length, 1)
         const def = defs[0]
-        assert.equal(def.type, 'variable')
+        assert.equal(def.type, 'variable-definition')
         assert.equal(def.name, 'staticVar')
         assert.equal(def.parent, root)
         assert.equal(def.varType, 'int')
@@ -76,6 +77,111 @@ describe("ClangParser", () => {
       }
     )
 
+    it(
+      "recursive cross call",
+      () => {
+        const code = `
+        int callB(int param);
+        int callA(int param) {
+          return callB(param) + 1;
+        }
+
+        int callB(int param) {
+          return param;
+        }
+        `
+
+        const parser = ClangParser.fromCode(code)
+        const root = parser.parse()
+        assert.equal(root.type, 'program')
+        const defs = root.definitions
+        assert.equal(defs.length, 3)
+        const declB = defs[0]
+        const defA = defs[1]
+        const defB = defs[2]
+        assignable(declB, {
+          type: 'function-declaration',
+          name: 'callB',
+          returnType: 'int',
+          parameters: [{ type: 'parameter', name: 'param', varType: 'int' }]
+        }, 'root.definitions[0]')
+        assignable(defA, {
+          type: 'function-definition',
+          name: 'callA',
+          returnType: 'int',
+          parameters: [{ type: 'parameter', name: 'param', varType: 'int' }],
+          body: {
+            type: 'function-body',
+            statements: [{
+              type: 'return',
+              expression: {
+                type: 'binary-expression',
+                operator: { type: 'Add', original: ' +' },
+                left: {
+                  type: 'function-call',
+                  arguments: [{ type: 'identifier', reference: { type: 'parameter', name: 'param', varType: 'int' } }],
+                  function: { type: 'function-declaration', name: 'callB' }
+                },
+                right: { type: 'number-literal', value: 1 }
+              }
+            }]
+          }
+        }, 'root.definitions[1]')
+        assignable(defB, {
+          type: 'function-definition',
+          name: 'callB',
+          returnType: 'int',
+          parameters: [{ type: 'parameter', name: 'param', varType: 'int' }],
+          body: {
+            type: 'function-body',
+            statements: [{
+              type: 'return',
+              expression: { type: 'identifier', reference: { type: 'parameter', name: 'param', varType: 'int' } }
+            }]
+          }
+        }, 'root.definitions[2]')
+      }
+    )
+
+    it(
+      'no referenced directly or indirectly in its own initializer',
+      () => {
+        const code = `
+        int a = a;
+        `
+
+        const parser = ClangParser.fromCode(code)
+        try {
+          const root = parser.parse()
+        } catch (e) {
+          assert.equal((e as any)?.message?.includes('Undefined identifier: a'), true)
+          return // pass
+        }
+        assert.fail('should throw error')
+      }
+    )
+
+    it(
+      'function declaration and definition set each other',
+      () => {
+        const code = `
+        void fun();
+        void fun() { }
+        `
+
+        const parser = ClangParser.fromCode(code)
+        const root = parser.parse()
+        assert.equal(root.type, 'program')
+        const defs = root.definitions
+        assert.equal(defs.length, 2)
+        const decl = defs[0]
+        const def = defs[1]
+        assert.equal(decl.type, 'function-declaration')
+        assert.equal(def.type, 'function-definition')
+        assert.equal(decl.definition, def)
+        assert.equal(def.declaration, decl)
+      }
+    )
   }) // suite next
 }) // suite ClangTokenizer
 
@@ -99,14 +205,14 @@ function iterate(next: () => ClangToken | undefined): ClangToken[] {
   return arr
 }
 
-function assignable(obj: Record<string, any>, isAssignableTo: Record<string, any>) {
+function assignable(obj: Record<string, any>, isAssignableTo: Record<string, any>, path = '$') {
   for (const key in isAssignableTo) {
     if (typeof isAssignableTo[key] === 'object') {
-      assignable(obj[key], isAssignableTo[key])
+      assignable(obj[key], isAssignableTo[key], `${path}.${key}`)
       continue
     }
     if (typeof isAssignableTo[key] === 'undefined') {
-      assert.equal(obj[key], isAssignableTo[key])
+      assert.equal(obj[key], isAssignableTo[key], `key: ${path}.${key}, excepted <${isAssignableTo[key]}>, got <${obj[key]}>`)
     }
     if (typeof isAssignableTo[key] === 'function') {
       continue
@@ -114,11 +220,11 @@ function assignable(obj: Record<string, any>, isAssignableTo: Record<string, any
     if (Array.isArray(isAssignableTo[key])) {
       assert.equal(obj[key].length, isAssignableTo[key].length)
       for (let i = 0; i < isAssignableTo[key].length; i++) {
-        assignable(obj[key][i], isAssignableTo[key][i])
+        assignable(obj[key][i], isAssignableTo[key][i], `${path}.${key}[${i}]`)
       }
       continue
     }
 
-    assert.equal(obj[key], isAssignableTo[key])
+    assert.equal(obj[key], isAssignableTo[key], `key: ${path}.${key}, excepted <${isAssignableTo[key]}>, got ${obj[key]}>`)
   }
 }

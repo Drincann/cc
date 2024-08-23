@@ -1,12 +1,13 @@
+import { exists } from 'node:fs'
 import { ClangToken, ClangTokenizer, ClangTokenType } from '../tokenizer/index.mjs'
 import { getCurrentLine } from '../tokenizer/utils.mjs'
 import { ParserError } from './error.mjs'
-import { tokenType2Primitive, DataType, isVarDataType, Identifier, ASTNode, FunctionDefinition, VariableDefinition, Program, FunctionBody, Expression, Statement, IfStatement, ReturnStatement, Parameter, StringLiteral, AddressOf, Dereference, UnaryExpression, NumberLiteral, BinaryOperatorToken, IdentifierDefinition } from './types/syntax.mjs'
+import { tokenType2Primitive, DataType, isVarDataType, ASTNode, FunctionDefinition, VariableDefinition, Program, FunctionBody, Expression, Statement, IfStatement, ReturnStatement, Parameter, StringLiteral, AddressOf, Dereference, UnaryExpression, NumberLiteral, BinaryOperatorToken, IdentifierDeclaration, FunctionCall, FunctionDeclaration, VariableDeclaration } from './types/syntax.mjs'
 import { ScopedMap } from './utils/scoped-map.mjs'
 
 export class Parser {
   private tokenizer: ClangTokenizer
-  private symbolTable: ScopedMap<string, IdentifierDefinition> = new ScopedMap(new Map())
+  private symbolTable: ScopedMap<string, IdentifierDeclaration> = new ScopedMap(new Map())
 
   private codeParsed: string = ''
 
@@ -39,7 +40,7 @@ export class Parser {
         declaration.parent = node
         this.connectParentRecursive(declaration)
       })
-    } else if (node.type === 'function') {
+    } else if (node.type === 'function-definition') {
       node.parameters.forEach(parameter => {
         parameter.parent = node
       })
@@ -48,7 +49,7 @@ export class Parser {
         statement.parent = node
         this.connectParentRecursive(statement)
       })
-    } else if (node.type === 'variable') {
+    } else if (node.type === 'variable-definition') {
       if (node.expression) {
         node.expression.parent = node
         this.connectParentRecursive(node.expression)
@@ -99,26 +100,25 @@ export class Parser {
 
     <variable_definition> ::= <type> <identifier> '=' <expression> ';'
    */
-  private parseGlobalDefinitions(): (FunctionDefinition | VariableDefinition)[] {
-    const definitions: (FunctionDefinition | VariableDefinition)[] = []
+  private parseGlobalDefinitions(): (FunctionDefinition | VariableDefinition | FunctionDeclaration | VariableDeclaration)[] {
+    const definitions: (FunctionDefinition | VariableDefinition | FunctionDeclaration | VariableDeclaration)[] = []
     while (this.currentToken) {
       definitions.push(this.parseFunctionOrVariable())
     }
     return definitions
   }
 
-  private parseFunctionOrVariable(): FunctionDefinition | VariableDefinition {
+  private parseFunctionOrVariable(): FunctionDefinition | VariableDefinition | FunctionDeclaration | VariableDeclaration {
     const dataType = this.parseDataType()
     const identifierToken = this.parseNextIdentifier()
 
     if (this.currentToken?.type === 'Semicolon') {
       // Variable declaration
       this.assertNoDuplicate(identifierToken)
-      const variable: VariableDefinition = {
-        type: 'variable',
+      const variable: VariableDeclaration = {
+        type: 'variable-declaration',
         name: identifierToken.value as string,
         varType: dataType,
-        expression: undefined // means it's a declaration
       }
 
       this.symbolTable.set(
@@ -134,36 +134,55 @@ export class Parser {
       const varValue = this.parseExpression()
       this.match('Semicolon');
       return {
-        type: 'variable',
+        type: 'variable-definition',
         name: identifierToken.value,
         varType: dataType,
         expression: varValue,
       }
     }
 
+    // Function
+    const existsFunctionSymbol = this.symbolTable.get(identifierToken.value as string)
+    if (existsFunctionSymbol?.type === 'function-definition') {
+      throw new ParserError('Function <' + identifierToken.value + '> redefined near line ' + identifierToken.line + ': \'' + getCurrentLine(this.codeParsed) + '\'')
+    }
+    if (existsFunctionSymbol?.type === 'variable-definition' || existsFunctionSymbol?.type === 'variable-declaration') {
+      throw new ParserError('Function <' + identifierToken.value + '> is already defined or declared as a variable near line ' + identifierToken.line + ': \'' + getCurrentLine(this.codeParsed) + '\'')
+    }
+    if (existsFunctionSymbol?.type === 'parameter') {
+      throw new ParserError('Function <' + identifierToken.value + '> is already declared as a parameter near line ' + identifierToken.line + ': \'' + getCurrentLine(this.codeParsed) + '\'')
+    }
+
     this.match('LeftParen')
     this.symbolTable = this.symbolTable.getSubScope()
     const parameters = this.parseFunctionParameterList()
+    parameters.forEach(param => {
+      this.symbolTable.set(param.name, param)
+    })
     this.match('RightParen')
 
     /* @ts-ignore */
     if (this.currentToken?.type === 'Semicolon') {
       // Function declaration
+      if (existsFunctionSymbol?.type === 'function-declaration') {
+        throw new ParserError('Function <' + identifierToken.value + '> redeclared near line ' + identifierToken.line + ': \'' + getCurrentLine(this.codeParsed) + '\'')
+      }
+
       this.symbolTable = this.symbolTable.getParentScope()
       this.assertNoDuplicate(identifierToken)
 
-      const func: FunctionDefinition = {
-        type: 'function',
+      const func: FunctionDeclaration = {
+        type: 'function-declaration',
         name: identifierToken.value as string,
         parameters,
         returnType: dataType,
-        body: undefined
       }
 
       this.symbolTable.set(
         identifierToken.value as string,
         func
       )
+      this.match('Semicolon')
       return func
     }
 
@@ -176,20 +195,24 @@ export class Parser {
       this.symbolTable = this.symbolTable.getParentScope()
       this.match('RightBrace')
 
-      const func: FunctionDefinition = {
-        type: 'function',
+      const functionDefinition: FunctionDefinition = {
+        type: 'function-definition',
         name: identifierToken!.value as string,
         parameters,
         body: body,
-        returnType: dataType
+        returnType: dataType,
+        declaration: existsFunctionSymbol
+      }
+      if (existsFunctionSymbol?.type === 'function-declaration') {
+        existsFunctionSymbol.definition = functionDefinition
       }
 
       this.symbolTable.set(
         identifierToken!.value as string,
-        func
+        functionDefinition
       )
 
-      return func
+      return functionDefinition
     }
 
     if (this.currentToken?.type === 'Equal') {
@@ -199,7 +222,7 @@ export class Parser {
       this.match('Semicolon')
 
       const variable: VariableDefinition = {
-        type: 'variable',
+        type: 'variable-definition',
         name: identifierToken.value as string,
         varType: dataType,
         expression: value
@@ -273,6 +296,10 @@ export class Parser {
         throw new ParserError('Undefined identifier: ' + this.currentToken.value + ' near line ' + this.currentToken.line + ': \'' + getCurrentLine(this.codeParsed) + '\'')
       }
 
+      if (identifier.type === 'function-definition' || identifier.type === 'function-declaration') {
+        return this.parseFunctionCall()
+      }
+
       this.match('Identifier')
       return {
         type: 'identifier',
@@ -285,6 +312,28 @@ export class Parser {
       return expression
     }
   }
+
+  private parseFunctionCall(): FunctionCall {
+    const identifierReference = this.symbolTable.get(this.currentToken?.value as string)
+    if (identifierReference?.type !== 'function-definition' && identifierReference?.type !== 'function-declaration') {
+      throw new ParserError('Expected function, but got: ' + identifierReference?.type + ' near line ' + this.currentToken?.line + ': \'' + getCurrentLine(this.codeParsed) + '\'')
+    }
+    this.match('Identifier')
+
+    this.match('LeftParen')
+    const _arguments: Expression[] = []
+    while (this.currentToken?.type !== 'RightParen') {
+      _arguments.push(this.parseExpression())
+      this.tryMatch('Comma')
+    }
+    this.match('RightParen')
+    return {
+      type: 'function-call',
+      arguments: _arguments,
+      function: identifierReference,
+    }
+  }
+
   private getPriority(type: BinaryOperatorToken['type'] | undefined): number {
     if (type === undefined) {
       throw new ParserError(`Invalid binary operator: ${type}`)
@@ -387,7 +436,7 @@ export class Parser {
       // Variable declaration
       this.assertNoDuplicate(identifierToken)
       const variable: VariableDefinition = {
-        type: 'variable',
+        type: 'variable-definition',
         name: identifierToken.value as string,
         varType: dataType,
         expression: undefined // means it's a declaration
@@ -408,7 +457,7 @@ export class Parser {
       this.match('Semicolon')
 
       const variable: VariableDefinition = {
-        type: 'variable',
+        type: 'variable-definition',
         name: identifierToken.value as string,
         varType: dataType,
         expression: value
