@@ -144,6 +144,28 @@ describe("ClangParser", () => {
     )
 
     it(
+      'recursive call',
+      () => {
+        const code = `
+        int main(char* args) {
+          return main(args);
+        }`
+
+        const parser = ClangParser.fromCode(code)
+        const root = parser.parse()
+
+        assert.equal(root.type, 'program')
+        const defs = root.definitions
+        assert.equal(defs.length, 1)
+        const mainFun = defs[0]
+        assert.equal(mainFun.type, 'function-definition')
+        assert.equal(mainFun.body?.statements[0].type, 'return')
+        assert.equal(mainFun.body?.statements[0].expression.type, 'function-call')
+        assert.equal(mainFun.body?.statements[0].expression.function, mainFun.declaration)
+      }
+    )
+
+    it(
       'no referenced directly or indirectly in its own initializer',
       () => {
         const code = `

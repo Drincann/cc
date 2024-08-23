@@ -109,6 +109,9 @@ export class Parser {
   }
 
   private parseFunctionOrVariable(): FunctionDefinition | VariableDefinition | FunctionDeclaration | VariableDeclaration {
+    const globalScope = this.symbolTable;
+    const functionScope = this.symbolTable.getSubScope()
+
     const dataType = this.parseDataType()
     const identifierToken = this.parseNextIdentifier()
 
@@ -121,7 +124,7 @@ export class Parser {
         varType: dataType,
       }
 
-      this.symbolTable.set(
+      globalScope.set(
         identifierToken.value as string,
         variable
       )
@@ -142,7 +145,7 @@ export class Parser {
     }
 
     // Function
-    const existsFunctionSymbol = this.symbolTable.get(identifierToken.value as string)
+    let existsFunctionSymbol = globalScope.get(identifierToken.value as string)
     if (existsFunctionSymbol?.type === 'function-definition') {
       throw new ParserError('Function <' + identifierToken.value + '> redefined near line ' + identifierToken.line + ': \'' + getCurrentLine(this.codeParsed) + '\'')
     }
@@ -153,46 +156,45 @@ export class Parser {
       throw new ParserError('Function <' + identifierToken.value + '> is already declared as a parameter near line ' + identifierToken.line + ': \'' + getCurrentLine(this.codeParsed) + '\'')
     }
 
+    // parse function parameters
     this.match('LeftParen')
-    this.symbolTable = this.symbolTable.getSubScope()
     const parameters = this.parseFunctionParameterList()
     parameters.forEach(param => {
-      this.symbolTable.set(param.name, param)
+      functionScope.set(param.name, param)
     })
     this.match('RightParen')
 
-    /* @ts-ignore */
-    if (this.currentToken?.type === 'Semicolon') {
+    if (existsFunctionSymbol === undefined) {
       // Function declaration
-      if (existsFunctionSymbol?.type === 'function-declaration') {
-        throw new ParserError('Function <' + identifierToken.value + '> redeclared near line ' + identifierToken.line + ': \'' + getCurrentLine(this.codeParsed) + '\'')
-      }
-
-      this.symbolTable = this.symbolTable.getParentScope()
       this.assertNoDuplicate(identifierToken)
 
-      const func: FunctionDeclaration = {
+      existsFunctionSymbol = {
         type: 'function-declaration',
         name: identifierToken.value as string,
         parameters,
         returnType: dataType,
       }
 
-      this.symbolTable.set(
+      globalScope.set(
         identifierToken.value as string,
-        func
+        existsFunctionSymbol
       )
-      this.match('Semicolon')
-      return func
+    }
+
+    /* @ts-ignore */
+    if (this.tryMatch('Semicolon')) {
+      // Function declaration
+      return existsFunctionSymbol
     }
 
     if (this.currentToken?.type === 'LeftBrace') {
       // Function definition
       this.match('LeftBrace')
+      this.symbolTable = functionScope
       const body = this.parseFunctionBody()
+      this.symbolTable = globalScope
       this.checkReturn(dataType, body, identifierToken)
 
-      this.symbolTable = this.symbolTable.getParentScope()
       this.match('RightBrace')
 
       const functionDefinition: FunctionDefinition = {
@@ -207,7 +209,7 @@ export class Parser {
         existsFunctionSymbol.definition = functionDefinition
       }
 
-      this.symbolTable.set(
+      globalScope.set(
         identifierToken!.value as string,
         functionDefinition
       )
@@ -228,7 +230,7 @@ export class Parser {
         expression: value
       }
 
-      this.symbolTable.set(
+      globalScope.set(
         identifierToken.value as string,
         variable
       )
