@@ -42,6 +42,7 @@ export interface Program {
     | FunctionDeclaration
     | VariableDeclaration
   )[]
+  symbolTable: Map<string, IdentifierDeclaration>
 }
 
 export interface Parameter {
@@ -74,6 +75,7 @@ export interface FunctionBody {
   type: 'function-body'
   parent?: ASTNode
   statements: Statement[]
+  symbolTable: Map<string, IdentifierDeclaration>
 }
 
 export type Statement = VariableDefinition | IfStatement | ReturnStatement // |  WhileStatement | ForStatement

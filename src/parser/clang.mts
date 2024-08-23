@@ -28,7 +28,8 @@ export class Parser {
     const program: Program = {
       type: 'program',
       parent: undefined,
-      definitions: this.parseGlobalDefinitions()
+      definitions: this.parseGlobalDefinitions(),
+      symbolTable: this.symbolTable,
     }
 
     this.connectParentRecursive(program)
@@ -137,12 +138,20 @@ export class Parser {
       // Varable definition
       const varValue = this.parseExpression()
       this.match('Semicolon');
-      return {
+
+      const variable: VariableDefinition = {
         type: 'variable-definition',
-        name: identifierToken.value,
+        name: identifierToken.value as string,
         varType: dataType,
         expression: varValue,
       }
+
+      globalScope.set(
+        identifierToken.value as string,
+        variable
+      )
+
+      return variable
     }
 
     // Function
@@ -402,7 +411,8 @@ export class Parser {
   private parseFunctionBody(): FunctionBody {
     return {
       type: 'function-body',
-      statements: this.parseStatements()
+      statements: this.parseStatements(),
+      symbolTable: this.symbolTable
     }
   }
 

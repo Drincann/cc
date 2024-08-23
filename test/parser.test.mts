@@ -238,6 +238,35 @@ describe("ClangParser", () => {
         // pass
       }
     )
+
+    it(
+      'symbol table info',
+      () => {
+        const code = `
+          int staticVar = 1;
+          int main() {
+            char localVar = "c";
+            return staticVar + localVar;
+          }
+          `
+
+        const parser = ClangParser.fromCode(code)
+        const root = parser.parse()
+        assert.equal(root.type, 'program')
+        const programSymbolTable = root.symbolTable
+        assert.equal(programSymbolTable.size, 2)
+        assert.equal(programSymbolTable.get('staticVar')?.type, 'variable-definition')
+        assert.equal(programSymbolTable.get('main')?.type, 'function-definition')
+        const mainFunc = programSymbolTable.get('main')
+        assert.equal(mainFunc?.type, 'function-definition')
+        const mainSymbolTable = mainFunc.body?.symbolTable
+        assert.equal(mainSymbolTable?.size, 1)
+        assert.equal(mainSymbolTable.get('staticVar')?.type, 'variable-definition')
+        assert.equal(mainSymbolTable.get('main')?.type, 'function-definition')
+        assert.equal(mainSymbolTable?.get('localVar')?.type, 'variable-definition')
+      }
+
+    )
   }) // suite next
 }) // suite ClangTokenizer
 
