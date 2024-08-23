@@ -3,7 +3,8 @@ import { ClangToken, ClangTokenizer, ClangTokenType } from '../tokenizer/index.m
 import { getCurrentLine } from '../tokenizer/utils.mjs'
 import { ParserError } from './error.mjs'
 import { tokenType2Primitive, DataType, isVarDataType, ASTNode, FunctionDefinition, VariableDefinition, Program, FunctionBody, Expression, Statement, IfStatement, ReturnStatement, Parameter, StringLiteral, AddressOf, Dereference, UnaryExpression, NumberLiteral, BinaryOperatorToken, IdentifierDeclaration, FunctionCall, FunctionDeclaration, VariableDeclaration } from './types/syntax.mjs'
-import { ScopedMap } from './utils/scoped-map.mjs'
+import { ScopedMap } from './utils/index.mjs'
+
 
 export class Parser {
   private tokenizer: ClangTokenizer
@@ -190,6 +191,13 @@ export class Parser {
     if (this.currentToken?.type === 'LeftBrace') {
       // Function definition
       this.match('LeftBrace')
+      if (existsFunctionSymbol !== undefined) {
+        ParserError.assert(
+          parameters.length === existsFunctionSymbol.parameters.length
+          && parameters.every((param, index) => param.varType === existsFunctionSymbol.parameters[index].varType),
+          `Function <${identifierToken.value}> parameter list does not match the previous declaration near line ${identifierToken.line}: \`${getCurrentLine(this.codeParsed)}\``
+        )
+      }
       this.symbolTable = functionScope
       const body = this.parseFunctionBody()
       this.symbolTable = globalScope

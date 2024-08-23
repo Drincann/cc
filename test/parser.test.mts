@@ -204,6 +204,40 @@ describe("ClangParser", () => {
         assert.equal(def.declaration, decl)
       }
     )
+
+    it(
+      'function declaration and definition parameters type not match',
+      () => {
+        const code = `
+        void fun(int a, int b);
+        void fun(int a, char b) { }
+        `
+
+        const parser = ClangParser.fromCode(code)
+        try {
+          parser.parse()
+
+        } catch (e) {
+          assert.equal((e as any)?.message?.includes('parameter list does not match the previous declaration'), true)
+          return // pass
+        }
+        assert.fail('should throw error')
+      }
+    )
+
+    it(
+      'function declaration and definition parameters name not match is allowed',
+      () => {
+        const code = `
+        void fun(int a, int b);
+        void fun(int c, int d) { }
+        `
+
+        const parser = ClangParser.fromCode(code)
+        parser.parse()
+        // pass
+      }
+    )
   }) // suite next
 }) // suite ClangTokenizer
 
