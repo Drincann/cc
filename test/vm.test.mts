@@ -1,30 +1,23 @@
 import { describe, it } from "node:test"
 import assert from 'assert/strict'
-import { VirtualMachine } from "../src/vm/vm.mjs"
+import { LC3Instruction, LC3VirtualMachine, Register } from "../src/vm/lc3.mjs"
 
 describe("VirtualMachine", () => {
   describe("#run()", () => {
     it(
-      "init",
+      "imm as negative number",
       () => {
-        const vm = new VirtualMachine(1024);
-        vm.program([]).run()
-
-        assert.deepEqual(
-          vm.snapshot(),
-          {
-            stack: array(1024).fill(0),
-            registers: {
-              pc: 0,
-              ax: 0,
-              bp: 0,
-              sp: 0
-            }
-          }
+        const vm = new LC3VirtualMachine()
+        vm.program(
+          [
+            LC3Instruction.ADD(Register.R0, Register.R1, 'IMM', -1)
+          ]
         )
+        vm.run()
+        const dump = vm.snapshot()
+        assert.equal(dump.registers[Register.R0], 65535)
       }
     )
-
   }) // suite run
 }) // suite ClangTokenizer
 

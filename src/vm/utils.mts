@@ -11,6 +11,22 @@ export type GetKeyByValue<T, V> = {
   [K in keyof T]: T[K] extends V ? K : never
 }[keyof T]
 
-export function shallowCopy<T>(arr: T[]): T[] {
-  return arr.slice()
+export function shallowCopy<T extends Record<string, any> | any[]>(o: T): T {
+  if (Array.isArray(o)) {
+    return o.slice() as T
+  } else {
+    return { ...o }
+  }
+}
+
+export function signExtendTo16From5(_5bits: number): number {
+  if (_5bits >> 4 === 1) {
+    return (0xffff << 5) | _5bits
+  }
+
+  return _5bits
+}
+
+export function to5Bits(n: number): number {
+  return n & 0b0000_000_000_111_111
 }
