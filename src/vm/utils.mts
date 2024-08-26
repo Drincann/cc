@@ -27,6 +27,18 @@ export function signExtendTo16From5(_5bits: number): number {
   return _5bits
 }
 
+export function signExtendTo16From9(_9bits: number): number {
+  if (_9bits >> 8 === 1) {
+    return (0xffff << 9) | _9bits
+  }
+
+  return _9bits
+}
+
 export function to5Bits(n: number): number {
   return n & 0b0000_000_000_111_111
+}
+
+export function to9Bits(n: number): number {
+  return n & 0b0000_000_111_111_111
 }

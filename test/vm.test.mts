@@ -1,9 +1,9 @@
 import { describe, it } from "node:test"
 import assert from 'assert/strict'
-import { LC3Instruction, LC3VirtualMachine, Register, Trap } from "../src/vm/lc3.mjs"
+import { ConditionFlag, LC3Instruction, LC3VirtualMachine, Register, Trap } from "../src/vm/lc3.mjs"
 
 describe("VirtualMachine", () => {
-  describe("#run()", () => {
+  describe("ADD", () => {
     it(
       "imm as negative number",
       () => {
@@ -17,9 +17,48 @@ describe("VirtualMachine", () => {
         vm.run()
         const dump = vm.snapshot()
         assert.equal(dump.registers[Register.R0], 65535)
+        assert.equal(dump.registers[Register.COND], ConditionFlag.NEGATIVE)
       }
     )
-  }) // suite run
+  }) // suite ADD
+
+  describe("LDI", () => {
+    it(
+      "loads a value from positive offset into a register",
+      () => {
+        const vm = new LC3VirtualMachine()
+        vm.program(
+          [
+            LC3Instruction.LDI(Register.R0, 10),
+            LC3Instruction.TRAP(Trap.HALT)
+          ]
+        )
+        vm.setState(0x3001 + 10, 0x7fff)
+        vm.run()
+        const dump = vm.snapshot()
+        assert.equal(dump.registers[Register.R0], 0x7fff)
+        assert.equal(dump.registers[Register.COND], ConditionFlag.POSTIVE)
+      }
+    )
+
+    it(
+      "loads a value from negative offset into a register",
+      () => {
+        const vm = new LC3VirtualMachine()
+        vm.program(
+          [
+            LC3Instruction.LDI(Register.R0, -10),
+            LC3Instruction.TRAP(Trap.HALT)
+          ]
+        )
+        vm.setState(0x3001 - 10,/*neg*/ 0x8000)
+        vm.run()
+        const dump = vm.snapshot()
+        assert.equal(dump.registers[Register.R0], 0x8000)
+        assert.equal(dump.registers[Register.COND], ConditionFlag.NEGATIVE)
+      }
+    )
+  })
 }) // suite ClangTokenizer
 
 function array(size: number) {

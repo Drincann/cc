@@ -1,9 +1,15 @@
 import { VirtualMachineError } from "./error.mjs"
-import { shallowCopy, signExtendTo16From5, to5Bits } from "./utils.mjs"
+import { shallowCopy, signExtendTo16From5, signExtendTo16From9, to5Bits, to9Bits } from "./utils.mjs"
 
 export enum Register {
   R0 = 0, R1, R2, R3, R4, R5, R6, R7,
   PC, COND, COUNT
+}
+
+export enum ConditionFlag {
+  POSTIVE = 1 << 0,
+  ZERO = 1 << 1,
+  NEGATIVE = 1 << 2
 }
 
 type OpcodeType =
@@ -55,6 +61,10 @@ interface HeapDump {
 }
 
 export class LC3VirtualMachine {
+  public setState(address: number, value: number) { // for test
+    this.memory[address] = value
+  }
+
   private memory: Uint16Array = new Uint16Array(65536)
 
   private running: boolean = false
@@ -138,6 +148,10 @@ export class LC3VirtualMachine {
       return this.add.bind(this) as any
     }
 
+    if (opcode === Opcode.LDI) {
+      return this.loadIndirect.bind(this) as any
+    }
+
     if (opcode === Opcode.TRAP) {
       switch (inst & 0xff) {
         case Trap.HALT: {
@@ -163,6 +177,13 @@ export class LC3VirtualMachine {
       ]
     }
 
+    if (opcode === Opcode.LDI) {
+      return [
+        (inst & 0b0000_111_000000000) >> 9, // dest
+        signExtendTo16From9(inst & 0b0000_000_111111111) // 9-bit PC offset
+      ]
+    }
+
     if (opcode === Opcode.TRAP) {
       return []
     }
@@ -170,15 +191,31 @@ export class LC3VirtualMachine {
     throw new VirtualMachineError(`Invalid opcode: ${opcode}`)
   }
 
-
-
-  private add(dest: Register, src1: Register, mode: 0 | 1, src2OrImm: Register | number) {
+  private add(dest: Register, src1: Register, mode: 0 | 1, src2OrSignedImm: Register | number) {
     if (mode === 0) {
-      this.registers[dest] = uint16(this.registers[src1] + this.registers[src2OrImm as Register])
+      this.registers[dest] = uint16(this.registers[src1] + this.registers[src2OrSignedImm as Register])
     } else {
-      this.registers[dest] = uint16(this.registers[src1] + src2OrImm)
+      this.registers[dest] = uint16(this.registers[src1] + src2OrSignedImm)
+    }
+    this.updateConditionRegister(dest)
+  }
+
+  private loadIndirect(dest: Register, signed9BitPcOffset: number) {
+    const pointerPosition = uint16(this.registers[Register.PC] + signed9BitPcOffset)
+    this.registers[dest] = uint16(this.memory[pointerPosition])
+    this.updateConditionRegister(dest)
+  }
+
+  private updateConditionRegister(register: Register) {
+    if (this.registers[register] === 0) {
+      this.registers[Register.COND] = ConditionFlag.ZERO
+    } else if (this.registers[register] >> 15) {
+      this.registers[Register.COND] = ConditionFlag.NEGATIVE
+    } else {
+      this.registers[Register.COND] = ConditionFlag.POSTIVE
     }
   }
+
 }
 
 function uint16(n: number): number {
@@ -202,6 +239,15 @@ export class LC3Instruction {
       | (mode === 'IMM'
         ? to5Bits(src2OrImm)
         : src2OrImm)
+    )
+  }
+
+  public static LDI(dest: Register, unsigned9bitPcOffset: number): LC3Instruction {
+    return new LC3Instruction(
+      'LDI',
+      0xa << 12
+      | (dest << 9)
+      | to9Bits(unsigned9bitPcOffset)
     )
   }
 
