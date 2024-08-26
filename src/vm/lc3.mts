@@ -61,8 +61,12 @@ interface HeapDump {
 }
 
 export class LC3VirtualMachine {
-  public setState(address: number, value: number) { // for test
+  public setMemory(address: number, value: number) { // for test
     this.memory[address] = value
+  }
+
+  public setRegister(register: Register, value: number) { // for test
+    this.registers[register] = value
   }
 
   private memory: Uint16Array = new Uint16Array(65536)
@@ -148,6 +152,10 @@ export class LC3VirtualMachine {
       return this.add.bind(this) as any
     }
 
+    if (opcode === Opcode.AND) {
+      return this.and.bind(this) as any
+    }
+
     if (opcode === Opcode.LDI) {
       return this.loadIndirect.bind(this) as any
     }
@@ -177,6 +185,17 @@ export class LC3VirtualMachine {
       ]
     }
 
+    if (opcode === Opcode.AND) {
+      return [
+        (inst & 0b0000_111_000_0_00_000) >> 9, // dest
+        (inst & 0b0000_000_111_0_00_000) >> 6, // src1
+        (inst & 0b0000_000_000_1_00_000) >> 5, // mode
+        (inst & 0b0000_000_000_1_00_000) >> 5 === 0 // src2 or imm
+          ? /* register mode */ (inst & 0b0000_000_000_0_00_111)
+          : /* immediate mode */ signExtendTo16From5(inst & 0b0000_000_000_0_11_111)
+      ]
+    }
+
     if (opcode === Opcode.LDI) {
       return [
         (inst & 0b0000_111_000000000) >> 9, // dest
@@ -196,6 +215,15 @@ export class LC3VirtualMachine {
       this.registers[dest] = uint16(this.registers[src1] + this.registers[src2OrSignedImm as Register])
     } else {
       this.registers[dest] = uint16(this.registers[src1] + src2OrSignedImm)
+    }
+    this.updateConditionRegister(dest)
+  }
+
+  private and(dest: Register, src1: Register, mode: 0 | 1, src2OrSignedImm: Register | number) {
+    if (mode === 0) {
+      this.registers[dest] = uint16(this.registers[src1] & this.registers[src2OrSignedImm as Register])
+    } else {
+      this.registers[dest] = uint16(this.registers[src1] & src2OrSignedImm)
     }
     this.updateConditionRegister(dest)
   }
@@ -233,6 +261,19 @@ export class LC3Instruction {
     return new LC3Instruction(
       'ADD',
       0x1 << 12
+      | (dest << 9)
+      | (src1 << 6)
+      | ((mode === 'IMM' ? 1 : 0) << 5)
+      | (mode === 'IMM'
+        ? to5Bits(src2OrImm)
+        : src2OrImm)
+    )
+  }
+
+  public static AND(dest: Register, src1: Register, mode: 'IMM' | 'REG', src2OrImm: Register | number): LC3Instruction {
+    return new LC3Instruction(
+      'ADD',
+      0x5 << 12
       | (dest << 9)
       | (src1 << 6)
       | ((mode === 'IMM' ? 1 : 0) << 5)
