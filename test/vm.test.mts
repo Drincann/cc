@@ -1,6 +1,6 @@
 import { describe, it } from "node:test"
 import assert from 'assert/strict'
-import { LC3Instruction, LC3VirtualMachine, Register } from "../src/vm/lc3.mjs"
+import { LC3Instruction, LC3VirtualMachine, Register, Trap } from "../src/vm/lc3.mjs"
 
 describe("VirtualMachine", () => {
   describe("#run()", () => {
@@ -10,7 +10,8 @@ describe("VirtualMachine", () => {
         const vm = new LC3VirtualMachine()
         vm.program(
           [
-            LC3Instruction.ADD(Register.R0, Register.R1, 'IMM', -1)
+            LC3Instruction.ADD(Register.R0, Register.R1, 'IMM', -1),
+            LC3Instruction.TRAP(Trap.HALT)
           ]
         )
         vm.run()

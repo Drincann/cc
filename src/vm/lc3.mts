@@ -6,7 +6,7 @@ export enum Register {
   PC, COND, COUNT
 }
 
-type Opcode =
+type OpcodeType =
   | 'ADD' | 'AND' | 'NOT' // add, bitwise and, and bitwise not
 
   | 'LD' | 'ST' // load and store
@@ -21,6 +21,33 @@ type Opcode =
   | 'TRAP' // execute trap
 
   | 'RES' // reserved (unused)
+
+enum Opcode {
+  ADD = 1,
+  LD = 2,
+  ST = 3,
+  JSR = 4,
+  AND = 5,
+  LDR = 6,
+  STR = 7,
+  RTI = 8,
+  NOT = 9,
+  LDI = 10,
+  STI = 11,
+  RET = 12,
+  RES = 13,
+  LEA = 14,
+  TRAP = 15,
+}
+
+export enum Trap {
+  GETC = 0x20, // input character from keyboard, not echoed
+  OUT = 0x21, // output character
+  PUTS = 0x22, // output string
+  IN = 0x23, // input character from keyboard, echoed
+  PUTSP = 0x24,// output a byte string
+  HALT = 0x25, // halt the machine
+}
 
 interface HeapDump {
   memory: Uint16Array;
@@ -51,8 +78,8 @@ export class LC3VirtualMachine {
   public program(code: Uint16Array | LC3Instruction[]) {
     if (!(code instanceof Uint16Array)) {
       code = new Uint16Array([
-        0,
-        ...code.map(i => i.serialize())
+        this.registers[Register.PC] = 0x3000,
+        ...code.map(i => i.compile())
       ])
     }
 
@@ -60,7 +87,7 @@ export class LC3VirtualMachine {
       throw new VirtualMachineError("Program is empty")
     }
 
-    const origin = code[0]
+    const origin = this.registers[Register.PC] = code[0]
     if (0xffff - origin + 1 < code.length - 1) {
       throw new VirtualMachineError("Program too large: " + code.length)
     }
@@ -107,11 +134,17 @@ export class LC3VirtualMachine {
 
   private getImpl(inst: number): (...args: number[]) => void {
     const opcode = uint16(inst) >> 12
-    if (opcode === 0) {
-      return () => this.running = false
-    }
-    if (opcode === 1) {
+    if (opcode === Opcode.ADD) {
       return this.add.bind(this) as any
+    }
+
+    if (opcode === Opcode.TRAP) {
+      switch (inst & 0xff) {
+        case Trap.HALT: {
+          return () => this.running = false
+        }
+        default: throw new VirtualMachineError(`Invalid trap: ${inst & 0xff}`)
+      }
     }
 
     throw new VirtualMachineError(`Invalid opcode: ${opcode}`)
@@ -119,10 +152,7 @@ export class LC3VirtualMachine {
 
   private extractOperands(inst: number): number[] {
     const opcode = inst >> 12
-    if (opcode === 0) {
-      return []
-    }
-    if (opcode === 1) {
+    if (opcode === Opcode.ADD) {
       return [
         (inst & 0b0000_111_000_0_00_000) >> 9, // dest
         (inst & 0b0000_000_111_0_00_000) >> 6, // src1
@@ -131,6 +161,10 @@ export class LC3VirtualMachine {
           ? /* register mode */ (inst & 0b0000_000_000_0_00_111)
           : /* immediate mode */ signExtendTo16From5(inst & 0b0000_000_000_0_11_111)
       ]
+    }
+
+    if (opcode === Opcode.TRAP) {
+      return []
     }
 
     throw new VirtualMachineError(`Invalid opcode: ${opcode}`)
@@ -152,11 +186,11 @@ function uint16(n: number): number {
 }
 
 export class LC3Instruction {
-  public serialize(): number {
+  public compile(): number {
     return this.serialized
   }
 
-  public constructor(public type: Opcode, private serialized: number) { }
+  public constructor(public type: OpcodeType, private serialized: number) { }
 
   public static ADD(dest: Register, src1: Register, mode: 'IMM' | 'REG', src2OrImm: Register | number): LC3Instruction {
     return new LC3Instruction(
@@ -168,6 +202,13 @@ export class LC3Instruction {
       | (mode === 'IMM'
         ? to5Bits(src2OrImm)
         : src2OrImm)
+    )
+  }
+
+  public static TRAP(trap: Trap): LC3Instruction {
+    return new LC3Instruction(
+      'TRAP',
+      0xf000 | (trap & 0x00ff)
     )
   }
 }
