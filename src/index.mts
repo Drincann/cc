@@ -1,5 +1,6 @@
-import { ClangTokenizer } from './tokenizer/index.mjs'
+import { ClangParser } from './parser/index.mjs'
 import fs from 'fs/promises'
+import util from 'util'
 
 const args = process.argv.slice(2)
 
@@ -21,12 +22,7 @@ async function fileNotExists(filename: string): Promise<boolean> {
 }
 
 function interpret(code: string) {
-  const tokenizer = ClangTokenizer.fromCode(code)
-  let token
-  do {
-    token = tokenizer.next()
-    if (token) {
-      console.log(token)
-    }
-  } while (token)
+  const tokenizer = ClangParser.fromCode(code)
+
+  console.log(util.inspect(tokenizer.parse(), { depth: 3, colors: true }))
 }

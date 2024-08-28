@@ -1,4 +1,4 @@
-# C Interpreter In TypeScript
+# C Compiler In TypeScript
 
 ## dependencies
 
@@ -16,29 +16,82 @@ npm i && npm run build
 npm test
 ```
 
+## features
+
+- [x] tokenizer `src/tokenizer/clang.mts`
+- [x] parser `src/parser/clang.mts`
+- [ ] semantic analysis (doing...)
+- [ ] asm generation
+- [ ] virtual machine `src/vm/lc3.mts` (doing...)
+- [ ] runtime (I/O API)
+
+```typescript
+import { ClangParser } from "./src/parser/index.mjs";
+import type { Program } from "./src/parser/index.mjs";
+import util from "util";
+
+const parser = ClangParser.fromCode(`
+int main(char* args) {
+  return 0;
+}`);
+
+const ast: Program = parser.parse();
+
+console.log(util.inspect(ast, { depth: null, colors: true }));
+```
+
 ## run demo
 
 ```bash
 npx ts-node src/index.mts src/demo/hello.c
 
-# { type: 'Int', value: undefined, line: 1 }
-# { type: 'Identifier', value: 'main', line: 1 }
-# { line: 1, type: 'LeftParen', value: undefined }
-# { line: 1, type: 'RightParen', value: undefined }
-# { line: 2, type: 'LeftBrace', value: undefined }
-# { type: 'Int', value: undefined, line: 3 }
-# { type: 'Identifier', value: 'a', line: 3 }
-# { line: 3, type: 'Assign', value: undefined }
-# { line: 3, type: 'Number', value: 10 }
-# { line: 3, type: 'Add', value: undefined }
-# { line: 3, type: 'Number', value: 20 }
-# { line: 3, type: 'Multiply', value: undefined }
-# { line: 3, type: 'Number', value: 3 }
-# { line: 3, type: 'Semicolon', value: undefined }
-# { type: 'Return', value: undefined, line: 4 }
-# { line: 4, type: 'Number', value: 0 }
-# { line: 4, type: 'Semicolon', value: undefined }
-# { line: 5, type: 'RightBrace', value: undefined }
+# {
+#   type: 'program',
+#   parent: undefined,
+#   definitions: [
+#     <ref *1> {
+#       type: 'function-definition',
+#       name: 'main',
+#       parameters: [ [Object] ],
+#       body: {
+#         type: 'function-body',
+#         statements: [Array],
+#         symbolTable: [ScopedMap [Map]]
+#       },
+#       returnType: 'int',
+#       declaration: {
+#         type: 'function-declaration',
+#         name: 'main',
+#         parameters: [Array],
+#         returnType: 'int',
+#         definition: [Circular *1]
+#       },
+#       parent: [Circular *2]
+#     }
+#   ],
+#   symbolTable: ScopedMap(1) [Map] {
+#     'main' => <ref *1> {
+#       type: 'function-definition',
+#       name: 'main',
+#       parameters: [ [Object] ],
+#       body: {
+#         type: 'function-body',
+#         statements: [Array],
+#         symbolTable: [ScopedMap [Map]]
+#       },
+#       returnType: 'int',
+#       declaration: {
+#         type: 'function-declaration',
+#         name: 'main',
+#         parameters: [Array],
+#         returnType: 'int',
+#         definition: [Circular *1]
+#       },
+#       parent: [Circular *2]
+#     },
+#     parent: Map(0) {}
+#   }
+# }
 ```
 
 ## dev
